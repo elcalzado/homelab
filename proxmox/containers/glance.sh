@@ -4,7 +4,7 @@ set -euo pipefail
 
 ctid="$(pvesh get /cluster/nextid)"
 ctt="local:vztmpl/nixos-image-lxc-proxmox-26.05pre-git-x86_64-linux.tar.xz"
-cts="local-lvm"
+cts="local-zfs"
 ctb="vmbr0v30"
 ctip="10.0.30.6/26"
 ctgw="10.0.30.1"
