@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Run on the Proxmox HOST. Adjust template/storage/IP.
 set -euo pipefail
 
 ctid="$(pvesh get /cluster/nextid)"

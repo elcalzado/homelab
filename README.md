@@ -18,9 +18,9 @@ produces two outputs from one definition:
   - `vm.nix`       VM/baremetal platform adapter
   - `services/`    one file per service
 - `proxmox/`  Proxmox-host notes + container-creation scripts
-- `docs/`     network map
+- `docs/`     network map and runbooks
 
 ## Hosts
 | host   | runs             | deploy                                            |
 |--------|------------------|---------------------------------------------------|
-| glance | Glance dashboard | `nixos-rebuild switch --flake .#glance-<vm\|lxc>` |
+| glance | [glanceapp/glance](https://github.com/glanceapp/glance) | `nixos-rebuild switch --flake .#glance-<vm\|lxc>` |
