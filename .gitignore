@@ -1,0 +1,12 @@
+# Nix build outputs
+result
+result-*
+
+# direnv / editor noise
+.direnv/
+*.swp
+.DS_Store
+
+# secrets
+*.env
+*.plain
