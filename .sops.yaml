@@ -1,0 +1,7 @@
+#
+# sops-nix configuration: which age recipients may decrypt files under secrets/.
+#
+creation_rules:
+  - path_regex: secrets/.*\.yaml$
+    age: >-
+      age1fd97d23sf9ws2g28h0m6uwe5etfjvqvnhkklcrtvcrt5qwsv4fhsqpwg7h

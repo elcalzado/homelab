@@ -3,14 +3,19 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
+    sops-nix.url = "github:Mic92/sops-nix";
+    sops-nix.inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = { self, nixpkgs, ... }:
+  outputs = { self, nixpkgs, ... }@inputs:
     let
       system = "x86_64-linux";
 
       mkSystem = modules:
-        nixpkgs.lib.nixosSystem { inherit system modules; };
+        nixpkgs.lib.nixosSystem {
+          inherit system modules;
+          specialArgs = { inherit inputs; };
+        };
 
       # For host dir ./hosts/<name>, emit TWO deployables that share the exact
       # same platform-agnostic core, differing only by which adapter is layered on:
@@ -30,6 +35,7 @@
       };
     in {
       nixosConfigurations =
-        (mkHost "glance");
+        (mkHost "glance")
+        // (mkHost "qbittorrent");
     };
 }

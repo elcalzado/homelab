@@ -80,14 +80,70 @@ Build straight from GitHub:
   nixos-rebuild switch --flake github:elcalzado/homelab#<name>-lxc
   ```
 
-This one build: fetches the repo, builds `<name>-lxc`, switches, **installs git**,
-and **flips SSH to key-only**. Jump to Step 3.
+Jump to Step 3.
 
 ---
 
 ## Step 2 (VM / baremetal) — Provision + first deploy
 
-Work in progress...
+A VM has no NixOS template to boot, so it must be installed onto its disk from
+the NixOS ISO. The catch: the `-vm` flake output imports
+`hosts/<name>/hardware-configuration.nix`, which doesn't exist until it's
+generated *on the machine* — so the install and the repo cross paths once.
+
+### 2a. Create the VM
+
+Upload the NixOS **minimal ISO** to Proxmox, then create the VM with
+`proxmox/vms/<name>.sh` (see `proxmox/vms/qbittorrent.sh` for the pattern —
+UEFI/OVMF, virtio-scsi, bridge `vmbr0v30`). Start it; the empty disk falls
+through to the ISO.
+
+### 2b. Install NixOS onto the disk
+
+In the VM console (booted off the ISO):
+
+```bash
+sudo -i
+parted /dev/sda -- mklabel gpt
+parted /dev/sda -- mkpart ESP fat32 1MiB 512MiB
+parted /dev/sda -- set 1 esp on
+parted /dev/sda -- mkpart primary 512MiB 100%
+mkfs.fat -F32 -n boot /dev/sda1
+mkfs.ext4 -L nixos /dev/sda2
+
+mount /dev/disk/by-label/nixos /mnt
+mkdir -p /mnt/boot && mount /dev/disk/by-label/boot /mnt/boot
+
+nixos-generate-config --root /mnt
+```
+
+### 2c. Hand the hardware config to the repo
+
+Copy `/mnt/etc/nixos/hardware-configuration.nix` off the VM into
+`hosts/<name>/hardware-configuration.nix`.
+
+### 2d. Bootstrap + first deploy
+
+Install a minimal system so the VM boots with SSH, then switch to the flake:
+
+```bash
+nixos-install
+reboot
+```
+
+After reboot (off the disk):
+
+```bash
+# place the sops age private key (for hosts that use secrets)
+install -d -m700 /var/lib/sops-nix
+# scp your key.txt to /var/lib/sops-nix/key.txt (mode 0600)
+
+# build from GitHub
+NIX_CONFIG="experimental-features = nix-command flakes" \
+nixos-rebuild switch --flake github:elcalzado/homelab#<name>-vm
+```
+
+Jump to Step 3
 
 ---
 
@@ -111,4 +167,4 @@ permanently on the first build.
 ## Notes
 
 - **stateVersion** is per-host and set once. Never bump it to "upgrade". More info in
-  [updating.md](updating.md).
+  [updating.md](updating.md). 
