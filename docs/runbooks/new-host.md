@@ -58,7 +58,7 @@ git push
 
 ### 2a. Create the container
 
-Create `proxmox/containers/<name>.sh` using `proxmox/containers/_template.sh` then do the following commands in the shell:
+Generate the container script with `bash proxmox/generate.sh <name> lxc` (answer the prompts — CPUs, RAM, IP, …); it writes `proxmox/lxc/<name>.sh`. Run that on the Proxmox host to `pct create` the container, then:
 
 ```bash
 pct start <ctid>

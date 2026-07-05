@@ -50,29 +50,12 @@ let
     '';
   };
 
-  # Seed qBittorrent.conf ONCE (copy-if-missing). serverConfig is left empty so
-  # the module does not overwrite this file on every restart, which lets runtime
-  # WebUI edits (crucially the admin password) persist. The WebUI password is
-  # therefore NOT stored in the repo: on first start qBittorrent prints a
-  # temporary password to its journal; set a permanent one via the WebUI.
-  seedConfig = pkgs.writeText "qBittorrent.conf" ''
-    [AutoRun]
-    enabled=true
-    program=${clamavScan}/bin/clamav_scan "%F"
-
-    [BitTorrent]
-    Session\DefaultSavePath=${saveDir}
-    Session\TempPath=${tempDir}
-    Session\TempPathEnabled=true
-
-    [LegalNotice]
-    Accepted=true
-
-    [Preferences]
-    General\Locale=en
-    WebUI\Username=guster
-    WebUI\LocalHostAuth=false
-  '';
+  # Declarative qBittorrent.conf, rendered from configs/qbittorrent/qBittorrent.conf
+  # with @TOKENS@ substituted.
+  qbtConfBase = pkgs.writeText "qBittorrent.conf" (builtins.replaceStrings
+    [ "@CLAMAV_SCAN@" "@SAVE_DIR@" "@TEMP_DIR@" ]
+    [ (lib.getExe clamavScan) saveDir tempDir ]
+    (builtins.readFile ../../configs/qbittorrent/qBittorrent.conf));
 in
 {
   # --- qBittorrent ---
@@ -93,17 +76,26 @@ in
   };
   users.groups.${qbtUser} = { };
 
-  # Dedicated log dir + one-time config seed
+  sops.secrets."webui/passwordHash" = {
+    owner = qbtUser;
+    restartUnits = [ "qbittorrent.service" ];
+  };
+
   systemd.tmpfiles.rules = [
     "d /var/log/qbittorrent 0755 ${qbtUser} ${qbtUser} -"
     "d ${profileDir}/qBittorrent/config 0755 ${qbtUser} ${qbtUser} -"
-    "C ${configFile} 0600 ${qbtUser} ${qbtUser} - ${seedConfig}"
   ];
 
-  # Don't start writing torrents into an empty mountpoint
   systemd.services.qbittorrent = {
     unitConfig.RequiresMountsFor = [ saveDir ];
     after = [ "wg-quick-wg0.service" ];
+    # Rewrite the config authoritatively on every start, then append the WebUI
+    # password hash from the sops secret.
+    restartTriggers = [ qbtConfBase ];
+    preStart = ''
+      ${pkgs.coreutils}/bin/install -m600 ${qbtConfBase} ${configFile}
+      printf 'WebUI\\Password_PBKDF2=%s\n' "$(${pkgs.coreutils}/bin/cat ${config.sops.secrets."webui/passwordHash".path})" >> ${configFile}
+    '';
   };
 
   # --- WireGuard ---
@@ -129,6 +121,7 @@ in
   systemd.services.vpn-portforward = {
     description = "VPN NAT-PMP port forwarding for qBittorrent";
     after = [ "wg-quick-wg0.service" "qbittorrent.service" ];
+    partOf = [ "qbittorrent.service" ];
     wants = [ "wg-quick-wg0.service" ];
     wantedBy = [ "multi-user.target" ];
     serviceConfig = {
