@@ -31,7 +31,7 @@ if [[ "$PLATFORM" == "vm" ]]; then
   MEMORY="$(ask "RAM (MB)" "4096")"
   BALLOON="$(ask "balloon (MB, 0=off)" "0")"
   DISK="$(ask "disk (GB)" "16")"
-  ISO="$(ask "install ISO" "local:iso/nixos-minimal-26.05-x86_64-linux.iso")"
+  ISO="$(ask "install ISO" "local:iso/nixos-minimal-26.05.3869.95ca1e203c07-x86_64-linux.iso")"
 
   cat > "$OUT" <<EOF
 #!/usr/bin/env bash
@@ -49,7 +49,8 @@ qm create "\$VMID" \\
   --net0 "virtio,bridge=$BRIDGE" \\
   --cdrom "$ISO" \\
   --boot order='scsi0;ide2' \\
-  --agent enabled=1 --onboot 1
+  --agent enabled=1 --onboot 1 \\
+&& qm set "\$VMID" -serial0 socket
 EOF
 
 else

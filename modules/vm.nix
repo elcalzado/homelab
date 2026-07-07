@@ -9,9 +9,26 @@
   #   boot.loader.grub.enable = true;
   #   boot.loader.grub.device = "/dev/sda";   # the disk, adjust as needed
 
-  # Pull an address by default; override per-host for a static IP.
-  networking.useDHCP = lib.mkDefault true;
+  # Keep normal VGA/noVNC as the primary console
+  boot.kernelParams = [
+    "console=ttyS0,115200"
+    "console=tty0"
+  ];
 
-  # Keep for any QEMU/KVM VM; remove on true baremetal.
+  # Add an additional serial login console
+  systemd.services."serial-getty@ttyS0".enable = true;
+
+  # No DHCP by default.
+  networking.useDHCP = lib.mkDefault false;
+
+  # Keep for any QEMU/KVM VM; harmless (inactive) on true baremetal.
   services.qemuGuest.enable = true;
+
+  # This set covers Proxmox virtio VMs and common baremetal (AHCI/NVMe/USB).
+  boot.initrd.availableKernelModules = [
+    "ahci" "xhci_pci" "virtio_pci" "virtio_scsi" "virtio_blk" "sd_mod" "sr_mod" "nvme" "usbhid"
+  ];
+  hardware.enableRedistributableFirmware = true;
+  hardware.cpu.intel.updateMicrocode = lib.mkDefault true;
+  hardware.cpu.amd.updateMicrocode = lib.mkDefault true;
 }

@@ -5,6 +5,8 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
     sops-nix.url = "github:Mic92/sops-nix";
     sops-nix.inputs.nixpkgs.follows = "nixpkgs";
+    disko.url = "github:nix-community/disko";
+    disko.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs = { self, nixpkgs, ... }@inputs:
@@ -21,7 +23,7 @@
       # same platform-agnostic core, differing only by which adapter is layered on:
       #
       #   <name>-lxc : core + Proxmox-LXC adapter
-      #   <name>-vm  : core + VM/baremetal adapter + that machine's generated hardware config
+      #   <name>-vm  : core + VM/baremetal adapter + declarative disko disk layout
       mkHost = name: {
         "${name}-lxc" = mkSystem [
           ./hosts/${name}
@@ -30,7 +32,7 @@
         "${name}-vm" = mkSystem [
           ./hosts/${name}
           ./modules/vm.nix
-          ./hosts/${name}/hardware-configuration.nix
+          ./modules/disk.nix
         ];
       };
     in {
