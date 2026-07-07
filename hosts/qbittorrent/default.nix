@@ -1,19 +1,20 @@
-{ inputs, ... }:
+{ config, lib, ... }:
 {
   imports = [
     ../../modules/common.nix
     ../../modules/services/qbittorrent.nix
-    inputs.sops-nix.nixosModules.sops
   ];
 
   networking.hostName = "qbittorrent";
 
-  networking.usePredictableInterfaceNames = false;
-  networking.useDHCP = false;
-  networking.interfaces.eth0.ipv4.addresses = [
+  # VM/baremetal only; on LXC, Proxmox manages the network.
+  networking.usePredictableInterfaceNames = lib.mkIf (!config.boot.isContainer) false;
+  networking.interfaces.eth0.ipv4.addresses = lib.mkIf (!config.boot.isContainer) [
     { address = "10.0.30.5"; prefixLength = 26; }
   ];
-  networking.defaultGateway = { address = "10.0.30.1"; interface = "eth0"; };
+  networking.defaultGateway = lib.mkIf (!config.boot.isContainer) {
+    address = "10.0.30.1"; interface = "eth0";
+  };
 
   # --- NFS share on TrueNAS ---
   fileSystems."/mnt/quarantine" = {
@@ -29,7 +30,7 @@
   };
 
   # --- Secrets ---
-  sops.age.keyFile = "/var/lib/sops-nix/key.txt";
+  # sops.age.keyFile comes from common.nix; only the host-specific file differs.
   sops.defaultSopsFile = ../../secrets/qbittorrent.yaml;
   sops.secrets."wireguard/privateKey" = { };
 
