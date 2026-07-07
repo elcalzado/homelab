@@ -24,7 +24,7 @@ git push
 Then on the affected host:
 
 ```bash
-cd /root/homelab && git pull && nixos-rebuild switch --flake .#<output>
+cd ~/homelab && git pull && nixos-rebuild switch --flake .#<output>
 ```
 
 Reverting a **`flake.lock`** commit specifically undoes a bad *update* and

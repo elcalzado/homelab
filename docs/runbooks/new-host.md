@@ -2,14 +2,6 @@
 
 **Goal:** get a new service running on a new machine, deployed from this repo.
 
-A "host" here = one service on one machine. Provisioning it is three repo files
-plus a platform-specific deploy. The repo work (Step 1) is identical for LXC and
-VM; the deploy (Step 2) differs because an LXC template is already a running
-NixOS, while a VM has to be installed onto a disk first.
-
-Step 1 takes place on your **workstation**.
-Step 2 takes place on **Proxmox**.
-
 ---
 
 ## Step 1 — Repo work
@@ -58,7 +50,8 @@ git push
 
 ### 2a. Create the container
 
-Generate the container script with `bash proxmox/generate.sh <name> lxc` (answer the prompts — CPUs, RAM, IP, …); it writes `proxmox/lxc/<name>.sh`. Run that on the Proxmox host to `pct create` the container, then:
+Generate the container script with `bash proxmox/generate.sh <name> lxc`; it writes
+`proxmox/lxc/<name>.sh`. Run that on the Proxmox host to `pct create` the container, then:
 
 ```bash
 pct start <ctid>
@@ -66,19 +59,26 @@ pct enter <ctid>
 
 # Now inside of the lxc
 source /etc/set-environment
-passwd root # This will prompt you to enter a password
+passwd root                               # set a temp root password
 ```
 
-SSH will be set up when the build is finished using the public key(s) in common.nix
+The root password will be overwritten once we run `nixos-rebuild` later. SSH will be set up 
+when the build is finished using the public key(s) in common.nix
 
 ### 2b. First build
 
+For hosts that use sops, install the key:
+
+```bash
+scp /path/to/key.txt root@10.0.30.<X>:/var/lib/sops-nix/key.txt
+```
+
 Build straight from GitHub:
 
-  ```bash
-  NIX_CONFIG="experimental-features = nix-command flakes" \
-  nixos-rebuild switch --flake github:elcalzado/homelab#<name>-lxc
-  ```
+```bash
+NIX_CONFIG="experimental-features = nix-command flakes" \
+nixos-rebuild switch --flake github:elcalzado/homelab#<name>-lxc
+```
 
 Jump to Step 3.
 
@@ -86,62 +86,43 @@ Jump to Step 3.
 
 ## Step 2 (VM / baremetal) — Provision + first deploy
 
-A VM has no NixOS template to boot, so it must be installed onto its disk from
-the NixOS ISO. The catch: the `-vm` flake output imports
-`hosts/<name>/hardware-configuration.nix`, which doesn't exist until it's
-generated *on the machine* — so the install and the repo cross paths once.
-
 ### 2a. Create the VM
 
 Upload the NixOS **minimal ISO** to Proxmox, then create the VM with
-`proxmox/vms/<name>.sh` (see `proxmox/vms/qbittorrent.sh` for the pattern —
-UEFI/OVMF, virtio-scsi, bridge `vmbr0v30`). Start it; the empty disk falls
-through to the ISO.
+`proxmox/vm/<name>.sh` (using `proxmox/generate.sh <name> vm`)
 
-### 2b. Install NixOS onto the disk
+### 2b. Make the installer reachable (one manual step)
 
-In the VM console (booted off the ISO):
-
-```bash
-sudo -i
-parted /dev/sda -- mklabel gpt
-parted /dev/sda -- mkpart ESP fat32 1MiB 512MiB
-parted /dev/sda -- set 1 esp on
-parted /dev/sda -- mkpart primary 512MiB 100%
-mkfs.fat -F32 -n boot /dev/sda1
-mkfs.ext4 -L nixos /dev/sda2
-
-mount /dev/disk/by-label/nixos /mnt
-mkdir -p /mnt/boot && mount /dev/disk/by-label/boot /mnt/boot
-
-nixos-generate-config --root /mnt
-```
-
-### 2c. Hand the hardware config to the repo
-
-Copy `/mnt/etc/nixos/hardware-configuration.nix` off the VM into
-`hosts/<name>/hardware-configuration.nix`.
-
-### 2d. Bootstrap + first deploy
-
-Install a minimal system so the VM boots with SSH, then switch to the flake:
+VLAN 30 has no DHCP, so give the live installer an address and a way in, in the
+VM console:
 
 ```bash
-nixos-install
-reboot
+ip addr add 10.0.30.<x>/26 dev ens18      # any free IP; check the NIC with `ip link`
+ip route add default via 10.0.30.1
+passwd root                               # set a temp root password
 ```
 
-After reboot (off the disk):
+### 2c. Install from your workstation
+
+For hosts that use sops, hand the age key to the installer so it's present on
+first boot:
 
 ```bash
-# place the sops age private key (for hosts that use secrets)
-install -d -m700 /var/lib/sops-nix
-# scp your key.txt to /var/lib/sops-nix/key.txt (mode 0600)
-
-# build from GitHub
-NIX_CONFIG="experimental-features = nix-command flakes" \
-nixos-rebuild switch --flake github:elcalzado/homelab#<name>-vm
+mkdir -p /tmp/extra/var/lib/sops-nix && cp /path/to/key.txt /tmp/extra/var/lib/sops-nix/key.txt
 ```
+
+The following command partitions the disk, installs the whole config, and reboots:
+
+```bash
+nix run --extra-experimental-features "nix-command flakes"  \
+  github:nix-community/nixos-anywhere --                    \
+  --flake .#<name>-vm                                       \
+  --extra-files /tmp/extra                                  \
+  root@10.0.30.<x>
+```
+
+**Bare metal:** identical, plus set `disko.devices.disk.main.device` in
+`hosts/<name>/default.nix` if the disk isn't `/dev/sda` (e.g. `/dev/nvme0n1`).
 
 Jump to Step 3
 
@@ -150,17 +131,14 @@ Jump to Step 3
 ## Step 3 — Steady state
 
 ```bash
-ssh root@<host-ip>
+ssh guster@<host-ip>
 
 # For first time on the machine, clone the repo locally:
-cd /root && git clone https://github.com/elcalzado/homelab.git
+cd ~ && git clone https://github.com/elcalzado/homelab.git
 
 # Every deploy after that:
-cd /root/homelab && git pull && nixos-rebuild switch --flake .#<name>-lxc   # or .#<name>-vm
+cd ~/homelab && git pull && nixos-rebuild switch --flake .#<name>-lxc   # or .#<name>-vm
 ```
-
-No more `--option` / `NIX_CONFIG` flag thanks to `common.nix` enabling flakes
-permanently on the first build.
 
 ---
 

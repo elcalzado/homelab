@@ -55,7 +55,7 @@ Updating the lock doesn't touch any running machine. Roll out the changes
 per host, over SSH, at whatever pace works:
 
 ```bash
-cd /root/homelab && git pull && nixos-rebuild switch --flake .#<output>
+cd ~/homelab && git pull && nixos-rebuild switch --flake .#<output>
 ```
 
 Hosts move **independently** so pull/rebuild only the ones you want on the new
@@ -73,7 +73,7 @@ Fastest recovery: revert the lock commit and rebuild. More info in
 git revert <lock-commit> && git push
 
 # then on the affected host:
-cd /root/homelab && git pull && nixos-rebuild switch --flake .#<output>
+cd ~/homelab && git pull && nixos-rebuild switch --flake .#<output>
 ```
 
 ---
