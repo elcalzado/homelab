@@ -17,7 +17,7 @@
   };
 
   # --- NFS share on TrueNAS ---
-  fileSystems."/mnt/quarantine" = {
+  fileSystems."/mnt/downloads" = {
     device = "truenas.home.arpa:/mnt/Storage/quarantine";
     fsType = "nfs";
     options = [

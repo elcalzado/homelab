@@ -5,10 +5,22 @@ if [ -z "$TARGET_PATH" ] || [ ! -e "$TARGET_PATH" ]; then
   exit 1
 fi
 
-# -r recursive, --quiet only reports on detection. Exit 0 = clean.
-if clamscan -r --quiet "$TARGET_PATH"; then
-  mv "$TARGET_PATH" "$TARGET_PATH.ready"
-else
-  # Exit 1 = threat found, 2 = error. Leave the file in place for review.
-  echo "$(date): THREAT DETECTED or ERROR scanning $TARGET_PATH" >> "$SCAN_LOG"
-fi
+# -r recursive. --database points clamscan at the freshclam-managed DB
+set +e
+output="$(clamscan -r --database="$CLAMAV_DB" "$TARGET_PATH" 2>&1)"
+rc=$?
+set -e
+
+case "$rc" in
+  0)  # clean
+    mv "$TARGET_PATH" "$TARGET_PATH.ready"
+    ;;
+  1)  # threat found
+    echo "$(date): THREAT DETECTED in $TARGET_PATH" >> "$SCAN_LOG"
+    echo "$output" >> "$SCAN_LOG"
+    ;;
+  *)  # 2 (or other) = scan error
+    echo "$(date): SCAN ERROR (rc=$rc) for $TARGET_PATH" >> "$SCAN_LOG"
+    echo "$output" >> "$SCAN_LOG"
+    ;;
+esac

@@ -19,8 +19,8 @@ let
   vpnEndpointPort = 51820;
 
   # Storage / qBittorrent
-  saveDir  = "/mnt/quarantine";
-  tempDir  = "/mnt/quarantine/temp";
+  saveDir  = "/mnt/downloads";
+  tempDir  = "/mnt/downloads/temp";
   webuiPort = 8080;
 
   qbtUser  = "qbtuser";
@@ -28,6 +28,7 @@ let
   profileDir = "/var/lib/qbittorrent";
   configFile = "${profileDir}/qBittorrent/config/qBittorrent.conf";
   scanLog  = "/var/log/qbittorrent/clamav_scan.log";
+  clamavDb = "/var/lib/clamav";
 
   # ClamAV post-download scanner
   clamavScan = pkgs.writeShellApplication {
@@ -35,6 +36,7 @@ let
     runtimeInputs = [ pkgs.clamav pkgs.coreutils ];
     text = ''
       SCAN_LOG=${lib.escapeShellArg scanLog}
+      CLAMAV_DB=${lib.escapeShellArg clamavDb}
       ${builtins.readFile ../../scripts/qbittorrent/clamav_scan.sh}
     '';
   };
