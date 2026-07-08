@@ -7,7 +7,10 @@
   services.openssh = {
     enable = true;
     openFirewall = true;
-    settings.PermitRootLogin = "no";
+    settings = {
+      PermitRootLogin = "no";
+      PasswordAuthentication = false;
+    };
   };
 
   security.sudo.wheelNeedsPassword = true;
