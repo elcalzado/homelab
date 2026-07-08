@@ -1,21 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ctid="$(pvesh get /cluster/nextid)"
-ctt="local:vztmpl/nixos-image-lxc-proxmox-26.05pre-git-x86_64-linux.tar.xz"
-cts="local-zfs"
-ctb="vmbr0v30"
-ctip="10.0.30.6/26"
-ctgw="10.0.30.1"
-ctns="10.0.30.1"
+CTID="$(pvesh get /cluster/nextid)"
 
-pct create "${ctid}" "${ctt}" \
-  --hostname=glance \
-  --ostype=nixos \
-  --unprivileged=1 --features nesting=1,keyctl=1 \
-  --net0 name=eth0,bridge=${ctb},ip=${ctip},gw=${ctgw} \
-  --nameserver ${ctns} \
-  --arch=amd64 --swap=1024 --memory=2048 \
-  --rootfs ${cts}:16 \
-  --storage=${cts} \
-  --onboot=1
+pct create "$CTID" "local:vztmpl/nixos-image-lxc-proxmox-26.05pre-git-x86_64-linux.tar.xz" \
+  --hostname glance \
+  --ostype nixos --arch amd64 \
+  --unprivileged 1 --features nesting=1,keyctl=1 --cores 1 \
+  --memory 1024 --swap 0 \
+  --rootfs "local-zfs:16" --storage "local-zfs" \
+  --net0 "name=eth0,bridge=vmbr0v30,ip=10.0.30.6/26,gw=10.0.30.1" \
+  --nameserver 10.0.30.1 \
+  --onboot 1

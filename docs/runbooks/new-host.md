@@ -59,18 +59,18 @@ pct enter <ctid>
 
 # Now inside of the lxc
 source /etc/set-environment
-passwd root                               # set a temp root password
 ```
 
-The root password will be overwritten once we run `nixos-rebuild` later. SSH will be set up 
-when the build is finished using the public key(s) in common.nix
+SSH will be set up when the build is finished using the public key(s) in common.nix
 
 ### 2b. First build
 
-For hosts that use sops, install the key:
+For hosts that use sops, install the age key first
 
 ```bash
-scp /path/to/key.txt root@10.0.30.<X>:/var/lib/sops-nix/key.txt
+install -d -m700 /var/lib/sops-nix
+cat > /var/lib/sops-nix/key.txt           # paste the key contents, then Ctrl-D
+chmod 600 /var/lib/sops-nix/key.txt
 ```
 
 Build straight from GitHub:

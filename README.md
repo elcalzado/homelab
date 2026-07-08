@@ -21,7 +21,7 @@ produces two outputs from one definition:
 - `docs/`     network map and runbooks
 
 ## Hosts
-| host   | runs             | deploy                                            |
-|--------|------------------|---------------------------------------------------|
-| glance | [glance](https://github.com/glanceapp/glance) | `nixos-rebuild switch --flake .#glance-<vm\|lxc>` |
-| qbittorrent | [qbittorrent-nox](https://github.com/qbittorrent/qBittorrent) + [wireguard](https://git.zx2c4.com/wireguard-linux/) + [nftables](https://git.netfilter.org/) + [clamav](https://github.com/Cisco-Talos/clamav) | `nixos-rebuild switch --flake .#qbittorrent-<vm\|lxc>` |
+| host   | runs             | deploy                                            | platforms |
+|--------|------------------|---------------------------------------------------|-----------|
+| glance | [glance](https://github.com/glanceapp/glance) | `nixos-rebuild switch --flake .#glance-<vm\|lxc>` | any |
+| qbittorrent | [qbittorrent-nox](https://github.com/qbittorrent/qBittorrent) + [wireguard](https://git.zx2c4.com/wireguard-linux/) + [nftables](https://git.netfilter.org/) + [clamav](https://github.com/Cisco-Talos/clamav) | `nixos-rebuild switch --flake .#qbittorrent-vm` | vm |
