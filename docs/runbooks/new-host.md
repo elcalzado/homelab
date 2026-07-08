@@ -99,6 +99,7 @@ VM console:
 ```bash
 ip addr add 10.0.30.<x>/26 dev ens18      # any free IP; check the NIC with `ip link`
 ip route add default via 10.0.30.1
+echo "nameserver 10.0.30.1" >> /etc/resolv.conf
 passwd root                               # set a temp root password
 ```
 

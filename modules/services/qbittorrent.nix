@@ -52,10 +52,13 @@ let
 
   # Declarative qBittorrent.conf, rendered from configs/qbittorrent/qBittorrent.conf
   # with @TOKENS@ substituted.
-  qbtConfBase = pkgs.writeText "qBittorrent.conf" (builtins.replaceStrings
+  qbtConfBody = builtins.replaceStrings
     [ "@CLAMAV_SCAN@" "@SAVE_DIR@" "@TEMP_DIR@" ]
     [ (lib.getExe clamavScan) saveDir tempDir ]
-    (builtins.readFile ../../configs/qbittorrent/qBittorrent.conf));
+    (builtins.readFile ../../configs/qbittorrent/qBittorrent.conf);
+  # Guarantee a trailing newline so the WebUI password hash has its own line
+  qbtConfBase = pkgs.writeText "qBittorrent.conf"
+    (qbtConfBody + lib.optionalString (!lib.hasSuffix "\n" qbtConfBody) "\n");
 in
 {
   # --- qBittorrent ---
