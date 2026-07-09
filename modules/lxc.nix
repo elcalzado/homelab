@@ -9,5 +9,7 @@
     privileged = false;
   };
 
+  networking.useHostResolvConf = false;
+
   services.fstrim.enable = false;
 }
