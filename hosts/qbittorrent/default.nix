@@ -1,19 +1,18 @@
-{ config, lib, ... }:
+{ ... }:
 {
   imports = [
     ../../modules/common.nix
     ../../modules/services/qbittorrent.nix
   ];
 
-  networking.hostName = "qbittorrent";
-
-  # VM/baremetal only; on LXC, Proxmox manages the network.
-  networking.usePredictableInterfaceNames = lib.mkIf (!config.boot.isContainer) false;
-  networking.interfaces.eth0.ipv4.addresses = lib.mkIf (!config.boot.isContainer) [
-    { address = "10.0.30.5"; prefixLength = 26; }
-  ];
-  networking.defaultGateway = lib.mkIf (!config.boot.isContainer) {
-    address = "10.0.30.1"; interface = "eth0";
+  networking = {
+    hostName = "qbittorrent";
+    usePredictableInterfaceNames = false;
+    interfaces.eth0.ipv4.addresses = [
+      { address = "10.0.30.5"; prefixLength = 26; }
+    ];
+    defaultGateway = { address = "10.0.30.1"; interface = "eth0"; };
+    nameservers = [ "10.0.30.1" ];
   };
 
   # --- NFS share on TrueNAS ---
