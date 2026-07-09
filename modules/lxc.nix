@@ -5,7 +5,7 @@
   nix.settings.sandbox = false;
 
   proxmoxLXC = {
-    manageNetwork = false;
+    manageNetwork = true;
     privileged = false;
   };
 

@@ -74,12 +74,12 @@ in
     serverConfig = { };
   };
 
+  users.groups.${qbtUser}.gid = qbtUid;
   users.users.${qbtUser} = {
     isSystemUser = true;
     uid = qbtUid;
     group = qbtUser;
   };
-  users.groups.${qbtUser} = { };
 
   sops.secrets."webui/passwordHash" = {
     owner = qbtUser;

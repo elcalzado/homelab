@@ -1,4 +1,8 @@
-{ config, pkgs, inputs, ... }:
+{ config, lib, pkgs, inputs, ... }:
+
+let
+  gusterUid = 1000;
+in
 {
   imports = [ inputs.sops-nix.nixosModules.sops ];
 
@@ -23,9 +27,10 @@
 
   users.mutableUsers = false;
 
+  users.groups.guster.gid = gusterUid;
   users.users.guster = {
     isNormalUser = true;
-    uid = 1000;
+    uid = gusterUid;
     group = "guster";
     extraGroups = [ "wheel" ];
     hashedPasswordFile = config.sops.secrets."guster/passwordHash".path;
@@ -33,11 +38,13 @@
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICrOEgaElLZiqDSSQy/NkyhIqfSnMGlRz/iHR6SXvL5Y" # tap-man
     ];
   };
-  users.groups.guster = { };
 
   users.users.root = {
     hashedPassword = "!";
   };
+
+  # No DHCP by default.
+  networking.useDHCP = lib.mkDefault false;
 
   time.timeZone = "America/New_York";
 

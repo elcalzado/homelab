@@ -18,9 +18,6 @@
   # Add an additional serial login console
   systemd.services."serial-getty@ttyS0".enable = true;
 
-  # No DHCP by default.
-  networking.useDHCP = lib.mkDefault false;
-
   # Keep for any QEMU/KVM VM; harmless (inactive) on true baremetal.
   services.qemuGuest.enable = true;
 
