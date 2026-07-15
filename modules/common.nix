@@ -25,22 +25,24 @@ in
     neededForUsers = true;
   };
 
-  users.mutableUsers = false;
+  users = {
+    mutableUsers = false;
 
-  users.groups.guster.gid = gusterUid;
-  users.users.guster = {
-    isNormalUser = true;
-    uid = gusterUid;
-    group = "guster";
-    extraGroups = [ "wheel" ];
-    hashedPasswordFile = config.sops.secrets."guster/passwordHash".path;
-    openssh.authorizedKeys.keys = [
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICrOEgaElLZiqDSSQy/NkyhIqfSnMGlRz/iHR6SXvL5Y" # tap-man
-    ];
-  };
+    groups.guster.gid = gusterUid;
+    users.guster = {
+      isNormalUser = true;
+      uid = gusterUid;
+      group = "guster";
+      extraGroups = [ "wheel" ];
+      hashedPasswordFile = config.sops.secrets."guster/passwordHash".path;
+      openssh.authorizedKeys.keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICrOEgaElLZiqDSSQy/NkyhIqfSnMGlRz/iHR6SXvL5Y" # tap-man
+      ];
+    };
 
-  users.users.root = {
-    hashedPassword = "!";
+    users.root = {
+      hashedPassword = "!";
+    };
   };
 
   # No DHCP by default.
