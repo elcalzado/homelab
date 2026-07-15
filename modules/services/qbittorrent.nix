@@ -7,7 +7,7 @@ let
   lanInterface = "eth0";           # usePredictableInterfaceNames=false
   lanNet       = "10.0.30.0/26";
   lanGateway   = "10.0.30.1";
-  mgmtNet      = "10.0.100.0/28"; 
+  mgmtNet      = "10.0.100.0/28";
 
   # WireGuard tunnel
   wgAddress = "10.2.0.2/32";
@@ -63,15 +63,34 @@ let
     (qbtConfBody + lib.optionalString (!lib.hasSuffix "\n" qbtConfBody) "\n");
 in
 {
-  # --- qBittorrent ---
-  services.qbittorrent = {
-    enable = true;
-    user = qbtUser;
-    group = qbtUser;
-    inherit profileDir webuiPort;
-    openFirewall = false;
-    # Left empty on purpose
-    serverConfig = { };
+  services = {
+    qbittorrent = {
+      enable = true;
+      user = qbtUser;
+      group = qbtUser;
+      inherit profileDir webuiPort;
+      openFirewall = false;
+      # Left empty on purpose
+      serverConfig = { };
+    };
+
+    # --- Split-DNS ---
+    dnsmasq = {
+      enable = true;
+      resolveLocalQueries = true;      # point the system resolver at 127.0.0.1
+      settings = {
+        no-resolv = true;
+        bind-interfaces = true;
+        listen-address = "127.0.0.1";
+        server = [
+          "/home.arpa/${lanGateway}"   # LAN names -> LAN resolver
+          wgDns                        # everything else -> VPN DNS
+        ];
+      };
+    };
+
+    # --- ClamAV ---
+    clamav.updater.enable = true;
   };
 
   users.groups.${qbtUser}.gid = qbtUid;
@@ -86,120 +105,106 @@ in
     restartUnits = [ "qbittorrent.service" ];
   };
 
-  systemd.tmpfiles.rules = [
-    "d /var/log/qbittorrent 0755 ${qbtUser} ${qbtUser} -"
-    "d ${profileDir}/qBittorrent/config 0755 ${qbtUser} ${qbtUser} -"
-  ];
-
-  systemd.services.qbittorrent = {
-    unitConfig.RequiresMountsFor = [ saveDir ];
-    after = [ "wg-quick-wg0.service" ];
-    # Rewrite the config authoritatively on every start, then append the WebUI
-    # password hash from the sops secret.
-    restartTriggers = [ qbtConfBase ];
-    preStart = ''
-      ${pkgs.coreutils}/bin/install -m600 ${qbtConfBase} ${configFile}
-      printf 'WebUI\\Password_PBKDF2=%s\n' "$(${pkgs.coreutils}/bin/cat ${config.sops.secrets."webui/passwordHash".path})" >> ${configFile}
-    '';
-  };
-
-  # --- WireGuard ---
-  networking.wg-quick.interfaces.wg0 = {
-    address = [ wgAddress ];
-    privateKeyFile = config.sops.secrets."wireguard/privateKey".path;
-    # DNS deliberately unset here: split-DNS is handled declaratively by dnsmasq
-    postUp = [
-      "${pkgs.iproute2}/bin/ip route replace ${mgmtNet} via ${lanGateway} dev ${lanInterface}"
+  systemd = {
+    tmpfiles.rules = [
+      "d /var/log/qbittorrent 0755 ${qbtUser} ${qbtUser} -"
+      "d ${profileDir}/qBittorrent/config 0755 ${qbtUser} ${qbtUser} -"
     ];
-    preDown = [
-      "${pkgs.iproute2}/bin/ip route del ${mgmtNet}"
-    ];
-    peers = [{
-      publicKey = vpnPublicKey;
-      allowedIPs = [ "0.0.0.0/0" ];
-      endpoint = "${vpnEndpointIp}:${toString vpnEndpointPort}";
-      persistentKeepalive = 25;
-    }];
-  };
 
-  # --- VPN port forwarding (NAT-PMP) ---
-  systemd.services.vpn-portforward = {
-    description = "VPN NAT-PMP port forwarding for qBittorrent";
-    after = [ "wg-quick-wg0.service" "qbittorrent.service" ];
-    partOf = [ "qbittorrent.service" ];
-    wants = [ "wg-quick-wg0.service" ];
-    wantedBy = [ "multi-user.target" ];
-    serviceConfig = {
-      ExecStart = lib.getExe portForward;
-      Restart = "always";
-      RestartSec = 10;
-      DynamicUser = true;
-      NoNewPrivileges = true;
-      ProtectSystem = "strict";
-      ProtectHome = true;
-      PrivateTmp = true;
+    services.qbittorrent = {
+      unitConfig.RequiresMountsFor = [ saveDir ];
+      after = [ "wg-quick-wg0.service" ];
+      # Rewrite the config authoritatively on every start, then append the WebUI
+      # password hash from the sops secret.
+      restartTriggers = [ qbtConfBase ];
+      preStart = ''
+        ${pkgs.coreutils}/bin/install -m600 ${qbtConfBase} ${configFile}
+        printf 'WebUI\\Password_PBKDF2=%s\n' "$(${pkgs.coreutils}/bin/cat ${config.sops.secrets."webui/passwordHash".path})" >> ${configFile}
+      '';
+    };
+
+    # --- VPN port forwarding (NAT-PMP) ---
+    services.vpn-portforward = {
+      description = "VPN NAT-PMP port forwarding for qBittorrent";
+      after = [ "wg-quick-wg0.service" "qbittorrent.service" ];
+      partOf = [ "qbittorrent.service" ];
+      wants = [ "wg-quick-wg0.service" ];
+      wantedBy = [ "multi-user.target" ];
+      serviceConfig = {
+        ExecStart = lib.getExe portForward;
+        Restart = "always";
+        RestartSec = 10;
+        DynamicUser = true;
+        NoNewPrivileges = true;
+        ProtectSystem = "strict";
+        ProtectHome = true;
+        PrivateTmp = true;
+      };
     };
   };
 
-  # --- Kill-switch (nftables) —--
-  networking.firewall.enable = false;
-  networking.nftables = {
-    enable = true;
-    ruleset = ''
-      table inet filter {
-        chain input {
-          type filter hook input priority filter; policy drop;
-
-          iif "lo" accept
-          ct state established,related accept
-
-          # WireGuard handshake with the VPN endpoint
-          ip saddr ${vpnEndpointIp} udp sport ${toString vpnEndpointPort} accept
-
-          # All traffic over the tunnel
-          iifname "wg0" accept
-
-          # LAN + management segments (SSH, WebUI, NFS to the NAS, DNS to gateway)
-          ip saddr ${lanNet} accept
-          ip saddr ${mgmtNet} accept
-        }
-
-        chain forward {
-          type filter hook forward priority filter; policy drop;
-        }
-
-        chain output {
-          type filter hook output priority filter; policy drop;
-
-          oif "lo" accept
-          ct state established,related accept
-
-          ip daddr ${vpnEndpointIp} udp dport ${toString vpnEndpointPort} accept
-          oifname "wg0" accept
-          ip daddr ${lanNet} accept
-          ip daddr ${mgmtNet} accept
-        }
-      }
-    '';
-  };
-
-  # --- Split-DNS (dnsmasq) —--
-  services.dnsmasq = {
-    enable = true;
-    resolveLocalQueries = true;      # point the system resolver at 127.0.0.1
-    settings = {
-      no-resolv = true;
-      bind-interfaces = true;
-      listen-address = "127.0.0.1";
-      server = [
-        "/home.arpa/${lanGateway}"   # LAN names -> LAN resolver
-        wgDns                        # everything else -> VPN DNS
+  networking = {
+    # --- WireGuard ---
+    wg-quick.interfaces.wg0 = {
+      address = [ wgAddress ];
+      privateKeyFile = config.sops.secrets."wireguard/privateKey".path;
+      # DNS deliberately unset here: split-DNS is handled declaratively by dnsmasq
+      postUp = [
+        "${pkgs.iproute2}/bin/ip route replace ${mgmtNet} via ${lanGateway} dev ${lanInterface}"
       ];
+      preDown = [
+        "${pkgs.iproute2}/bin/ip route del ${mgmtNet}"
+      ];
+      peers = [{
+        publicKey = vpnPublicKey;
+        allowedIPs = [ "0.0.0.0/0" ];
+        endpoint = "${vpnEndpointIp}:${toString vpnEndpointPort}";
+        persistentKeepalive = 25;
+      }];
+    };
+
+    # --- Kill-switch (nftables) ---
+    firewall.enable = false;
+    nftables = {
+      enable = true;
+      ruleset = ''
+        table inet filter {
+          chain input {
+            type filter hook input priority filter; policy drop;
+
+            iif "lo" accept
+            ct state established,related accept
+
+            # WireGuard handshake with the VPN endpoint
+            ip saddr ${vpnEndpointIp} udp sport ${toString vpnEndpointPort} accept
+
+            # All traffic over the tunnel
+            iifname "wg0" accept
+
+            # LAN + management segments (SSH, WebUI, NFS to the NAS, DNS to gateway)
+            ip saddr ${lanNet} accept
+            ip saddr ${mgmtNet} accept
+          }
+
+          chain forward {
+            type filter hook forward priority filter; policy drop;
+          }
+
+          chain output {
+            type filter hook output priority filter; policy drop;
+
+            oif "lo" accept
+            ct state established,related accept
+
+            ip daddr ${vpnEndpointIp} udp dport ${toString vpnEndpointPort} accept
+            oifname "wg0" accept
+            ip daddr ${lanNet} accept
+            ip daddr ${mgmtNet} accept
+          }
+        }
+      '';
     };
   };
-
-  # --- ClamAV ---
-  services.clamav.updater.enable = true;
 
   environment.systemPackages = [ clamavScan pkgs.wireguard-tools pkgs.libnatpmp ];
 }

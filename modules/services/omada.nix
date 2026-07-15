@@ -16,7 +16,7 @@ let
   maxHeap = "2048m";
 
   jre       = pkgs.openjdk21_headless;
-  jsvc      = pkgs.jsvc.override { jre = jre; jdk = pkgs.openjdk21; };
+  jsvc      = pkgs.jsvc.override { inherit jre; jdk = pkgs.openjdk21; };
   jsvcBin   = lib.getExe jsvc;
   mongodBin = lib.getExe' pkgs.mongodb-ce "mongod";
 
