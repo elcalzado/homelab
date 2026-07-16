@@ -42,5 +42,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # full history for the git-aware scan
       - uses: DeterminateSystems/nix-installer-action@main
-      - run: ./scripts/checks.sh secrets
+      - run: ./scripts/checks.sh secrets-history

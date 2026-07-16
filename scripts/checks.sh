@@ -2,7 +2,7 @@
 # Repo checks shared by CI (.github/workflows/ci.yml) and the git pre-commit hook
 # (scripts/git-hooks/pre-commit), so the two don't drift.
 #
-# Usage: scripts/checks.sh [eval|lint|shellcheck|secrets|all]   (default: all)
+# Usage: scripts/checks.sh [eval|lint|shellcheck|secrets|secrets-history|all]   (default: all)
 #
 # Everything runs through nix, so the only prerequisite is Nix with flakes.
 set -euo pipefail
@@ -47,11 +47,16 @@ scan_secrets() {
   nix_ run nixpkgs#gitleaks -- detect --no-git --source . --redact --no-banner
 }
 
+scan_secrets_history() {
+  nix_ run nixpkgs#gitleaks -- detect --source . --redact --no-banner
+}
+
 case "${1:-all}" in
-  eval)       eval_hosts ;;
-  lint)       lint_nix ;;
-  shellcheck) run_shellcheck ;;
-  secrets)    scan_secrets ;;
-  all)        eval_hosts; lint_nix; run_shellcheck; scan_secrets ;;
-  *)          echo "usage: $0 [eval|lint|shellcheck|secrets|all]" >&2; exit 2 ;;
+  eval)            eval_hosts ;;
+  lint)            lint_nix ;;
+  shellcheck)      run_shellcheck ;;
+  secrets)         scan_secrets ;;
+  secrets-history) scan_secrets_history ;;
+  all)             eval_hosts; lint_nix; run_shellcheck; scan_secrets ;;
+  *)               echo "usage: $0 [eval|lint|shellcheck|secrets|secrets-history|all]" >&2; exit 2 ;;
 esac
