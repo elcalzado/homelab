@@ -11,6 +11,7 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# Every job installs Nix and runs the same scripts/checks.sh the pre-commit hook uses.
 jobs:
   eval:
     name: nix eval (all hosts)
@@ -18,16 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: DeterminateSystems/nix-installer-action@main
-      - name: Evaluate every host configuration
-        run: |
-          set -euo pipefail
-          names=$(nix eval --json '.#nixosConfigurations' --apply builtins.attrNames | jq -r '.[]')
-          for n in $names; do
-            echo "::group::eval $n"
-            nix eval --raw ".#nixosConfigurations.\"$n\".config.system.build.toplevel.drvPath"
-            echo
-            echo "::endgroup::"
-          done
+      - run: ./scripts/checks.sh eval
 
   lint:
     name: nix lint (deadnix + statix)
@@ -35,28 +27,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: DeterminateSystems/nix-installer-action@main
-      - name: deadnix (dead code)
-        run: nix run nixpkgs#deadnix -- --fail .
-      - name: statix (anti-patterns)
-        run: nix run nixpkgs#statix -- check .
+      - run: ./scripts/checks.sh lint
 
   shellcheck:
     name: shellcheck
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Standalone scripts
-        run: |
-          set -euo pipefail
-          mapfile -t files < <(git ls-files '*.sh' | grep -v '^scripts/')
-          if [ ${#files[@]} -gt 0 ]; then shellcheck "${files[@]}"; fi
-      - name: Module fragments
-        # scripts/ files are sourced into writeShellApplication with vars injected by Nix
-        # and no shebang, so exclude SC2154 (unassigned) and SC2148 (no shebang)
-        run: |
-          set -euo pipefail
-          mapfile -t files < <(git ls-files '*.sh' | grep '^scripts/')
-          if [ ${#files[@]} -gt 0 ]; then shellcheck --shell=bash -e SC2148,SC2154 "${files[@]}"; fi
+      - uses: DeterminateSystems/nix-installer-action@main
+      - run: ./scripts/checks.sh shellcheck
 
   secrets:
     name: gitleaks
@@ -64,5 +43,4 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: DeterminateSystems/nix-installer-action@main
-      - name: Scan the working tree for secrets
-        run: nix run nixpkgs#gitleaks -- detect --no-git --source . --redact --no-banner
+      - run: ./scripts/checks.sh secrets
