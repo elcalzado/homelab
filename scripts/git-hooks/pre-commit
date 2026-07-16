@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Fast checks before every commit; CI additionally runs eval
+set -e
+checks="$(git rev-parse --show-toplevel)/scripts/checks.sh"
+"$checks" lint
+"$checks" shellcheck
+"$checks" secrets

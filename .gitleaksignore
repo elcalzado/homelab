@@ -1,0 +1,2 @@
+# gitleaks allowlist: one finding fingerprint per line (commit:file:rule:startline).
+# The git-aware CI scan (scripts/checks.sh secrets-history) honors this file.
