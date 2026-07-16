@@ -7,9 +7,13 @@
 # Everything runs through nix, so the only prerequisite is Nix with flakes.
 set -euo pipefail
 
-cd "$(git rev-parse --show-toplevel)"
+root="$(git rev-parse --show-toplevel)"
+cd "$root"
 
 nix_() { nix --extra-experimental-features 'nix-command flakes' "$@"; }
+
+# Run a nixpkgs tool from the flake's pinned nixpkgs (--inputs-from), not the floating registry.
+run_tool() { nix_ run --inputs-from . "nixpkgs#$1" -- "${@:2}"; }
 
 eval_hosts() {
   local names name
@@ -23,8 +27,8 @@ eval_hosts() {
 }
 
 lint_nix() {
-  nix_ run nixpkgs#deadnix -- --fail .
-  nix_ run nixpkgs#statix -- check .
+  run_tool deadnix --fail .
+  run_tool statix check .
 }
 
 run_shellcheck() {
@@ -36,19 +40,19 @@ run_shellcheck() {
     if [ "$(head -c2 "$f")" = '#!' ]; then complete+=("$f"); else fragments+=("$f"); fi
   done < <(git ls-files '*.sh')
   if [ "${#complete[@]}" -gt 0 ]; then
-    nix_ run nixpkgs#shellcheck -- "${complete[@]}"
+    run_tool shellcheck "${complete[@]}"
   fi
   if [ "${#fragments[@]}" -gt 0 ]; then
-    nix_ run nixpkgs#shellcheck -- --shell=bash -e SC2148,SC2154 "${fragments[@]}"
+    run_tool shellcheck --shell=bash -e SC2148,SC2154 "${fragments[@]}"
   fi
 }
 
 scan_secrets() {
-  nix_ run nixpkgs#gitleaks -- detect --no-git --source . --redact --no-banner
+  run_tool gitleaks detect --no-git --source . --redact --no-banner
 }
 
 scan_secrets_history() {
-  nix_ run nixpkgs#gitleaks -- detect --source . --redact --no-banner
+  run_tool gitleaks detect --source . --redact --no-banner
 }
 
 case "${1:-all}" in
