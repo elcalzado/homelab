@@ -65,19 +65,33 @@ SSH will be set up when the build is finished using the public key(s) in common.
 
 ### 2b. First build
 
-For hosts that use sops, install the age key first
-
 ```bash
+passwd root                               # temp root password, for the copy
+
+# sops hosts: age key first
 install -d -m700 /var/lib/sops-nix
-cat > /var/lib/sops-nix/key.txt           # paste the key contents, then Ctrl-D
+cat > /var/lib/sops-nix/key.txt           # paste key, then Ctrl-D
 chmod 600 /var/lib/sops-nix/key.txt
+
+# swap the template's key-only sshd for a throwaway permissive one (absolute path required)
+systemctl stop sshd.socket sshd.service 2>/dev/null; pkill -x sshd 2>/dev/null
+ssh-keygen -A
+/run/current-system/sw/bin/sshd -o PermitRootLogin=yes -o PasswordAuthentication=yes
 ```
 
-Build straight from GitHub:
+From your workstation:
 
 ```bash
+tar czf - --exclude=.git . | ssh -o PubkeyAuthentication=no -o PreferredAuthentications=password \
+  root@10.0.30.<x> 'mkdir -p /root/homelab && tar xzf - -C /root/homelab'
+```
+
+Back in the container:
+
+```bash
+pkill -x sshd
 NIX_CONFIG="experimental-features = nix-command flakes" \
-nixos-rebuild switch --flake github:elcalzado/homelab#<name>-lxc
+nixos-rebuild switch --flake /root/homelab#<name>-lxc
 ```
 
 Jump to Step 3.
