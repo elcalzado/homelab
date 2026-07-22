@@ -39,6 +39,7 @@
       nixosConfigurations =
         (mkHost "glance")
         // (mkHost "qbittorrent")
-        // (mkHost "omada");
+        // (mkHost "omada")
+        // (mkHost "servarr");
     };
 }
