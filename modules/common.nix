@@ -50,5 +50,5 @@ in
 
   time.timeZone = "America/New_York";
 
-  environment.systemPackages = with pkgs; [ git vim ];
+  environment.systemPackages = with pkgs; [ git vim rsync ];
 }

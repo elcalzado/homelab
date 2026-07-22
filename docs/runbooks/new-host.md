@@ -145,14 +145,22 @@ Jump to Step 3
 
 ## Step 3 — Steady state
 
+First get the repo on the target with one of the following:
+- Pass it in from your workstation:
 ```bash
-ssh guster@<host-ip>
+rsync -a --delete --exclude='.git' ./ guster@<host-ip>:~/homelab/
+```
 
-# For first time on the machine, clone the repo locally:
+...or...
+
+- Clone it from GitHub from within the target:
+```bash
 cd ~ && git clone https://github.com/elcalzado/homelab.git
+```
 
-# Every deploy after that:
-cd ~/homelab && git pull && nixos-rebuild switch --flake .#<name>-lxc   # or .#<name>-vm
+Then enter the target and rebuild:
+```bash
+ssh -t guster@<host-ip> 'cd ~/homelab && sudo nixos-rebuild switch --flake .#<name>-vm'   # or .#<name>-lxc
 ```
 
 ---
