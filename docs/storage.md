@@ -22,3 +22,12 @@ entertainment/
 └── library/
     └── movies/ tv/ music/ books/
 ```
+
+## NAS
+
+It's best to create some of the directories on the NAS instead of letting different hosts try to create them.
+
+To create `torrents/` and `library/` run:
+```bash
+install -d -o root -g entertainment -m 770 /mnt/Storage/entertainment/torrents /mnt/Storage/entertainment/library
+```

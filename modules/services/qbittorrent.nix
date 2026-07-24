@@ -1,36 +1,28 @@
 { config, pkgs, lib, ... }:
 
 let
-  # --- Tunables ---
-
-  # LAN
-  lanInterface = "eth0";           # usePredictableInterfaceNames=false
+  lanInterface = "eth0";
   lanNet       = "10.0.30.0/26";
   lanGateway   = "10.0.30.1";
   mgmtNet      = "10.0.100.0/28";
 
-  # WireGuard tunnel
   wgAddress = "10.2.0.2/32";
   wgDns     = "10.2.0.1";
 
-  # VPN peer/endpoint
   vpnPublicKey    = "D7+AG9clQ1F/6uaY8apeoKDOKAD7p6tf65dFIVLGsHg=";
   vpnEndpointIp   = "149.102.224.162";
   vpnEndpointPort = 51820;
 
-  # Storage / qBittorrent
-  saveDir  = "/mnt/downloads";
-  tempDir  = "/mnt/downloads/temp";
+  mountDir = "/mnt/entertainment";
+  saveDir  = "${mountDir}/torrents";
+  tempDir  = "${saveDir}/temp";
   webuiPort = 8080;
 
-  qbtUser  = "qbtuser";
-  qbtUid = 3002;
   profileDir = "/var/lib/qbittorrent";
   configFile = "${profileDir}/qBittorrent/config/qBittorrent.conf";
   scanLog  = "/var/log/qbittorrent/clamav_scan.log";
   clamavDb = "/var/lib/clamav";
 
-  # ClamAV post-download scanner
   clamavScan = pkgs.writeShellApplication {
     name = "clamav_scan";
     runtimeInputs = [ pkgs.clamav pkgs.coreutils ];
@@ -41,7 +33,6 @@ let
     '';
   };
 
-  # VPN NAT-PMP port forwarding
   portForward = pkgs.writeShellApplication {
     name = "vpn-portforward";
     runtimeInputs = [ pkgs.libnatpmp pkgs.curl pkgs.gnused pkgs.coreutils ];
@@ -66,15 +57,13 @@ in
   services = {
     qbittorrent = {
       enable = true;
-      user = qbtUser;
-      group = qbtUser;
+      group = "entertainment";
       inherit profileDir webuiPort;
       openFirewall = false;
       # Left empty on purpose
       serverConfig = { };
     };
 
-    # --- Split-DNS ---
     dnsmasq = {
       enable = true;
       resolveLocalQueries = true;      # point the system resolver at 127.0.0.1
@@ -83,36 +72,29 @@ in
         bind-interfaces = true;
         listen-address = "127.0.0.1";
         server = [
-          "/home.arpa/${lanGateway}"   # LAN names -> LAN resolver
-          wgDns                        # everything else -> VPN DNS
+          "/home.arpa/${lanGateway}"
+          wgDns
         ];
       };
     };
 
-    # --- ClamAV ---
     clamav.updater.enable = true;
   };
 
-  users.groups.${qbtUser}.gid = qbtUid;
-  users.users.${qbtUser} = {
-    isSystemUser = true;
-    uid = qbtUid;
-    group = qbtUser;
-  };
-
   sops.secrets."webui/passwordHash" = {
-    owner = qbtUser;
+    owner = config.services.qbittorrent.user;
     restartUnits = [ "qbittorrent.service" ];
   };
 
   systemd = {
     tmpfiles.rules = [
-      "d /var/log/qbittorrent 0755 ${qbtUser} ${qbtUser} -"
-      "d ${profileDir}/qBittorrent/config 0755 ${qbtUser} ${qbtUser} -"
+      "d /var/log/qbittorrent 0755 ${config.services.qbittorrent.user} ${config.services.qbittorrent.group} -"
+      "d ${profileDir}/qBittorrent/config 0755 ${config.services.qbittorrent.user} ${config.services.qbittorrent.group} -"
     ];
 
     services.qbittorrent = {
-      unitConfig.RequiresMountsFor = [ saveDir ];
+      serviceConfig.UMask = "0002";
+      unitConfig.RequiresMountsFor = [ mountDir ];
       after = [ "wg-quick-wg0.service" ];
       # Rewrite the config authoritatively on every start, then append the WebUI
       # password hash from the sops secret.
@@ -123,7 +105,6 @@ in
       '';
     };
 
-    # --- VPN port forwarding (NAT-PMP) ---
     services.vpn-portforward = {
       description = "VPN NAT-PMP port forwarding for qBittorrent";
       after = [ "wg-quick-wg0.service" "qbittorrent.service" ];
@@ -144,7 +125,6 @@ in
   };
 
   networking = {
-    # --- WireGuard ---
     wg-quick.interfaces.wg0 = {
       address = [ wgAddress ];
       privateKeyFile = config.sops.secrets."wireguard/privateKey".path;
@@ -163,7 +143,6 @@ in
       }];
     };
 
-    # --- Kill-switch (nftables) ---
     firewall.enable = false;
     nftables = {
       enable = true;
