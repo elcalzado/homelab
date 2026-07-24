@@ -81,6 +81,7 @@ in
     clamav.updater.enable = true;
   };
 
+  sops.secrets."wireguard/privateKey" = { };
   sops.secrets."webui/passwordHash" = {
     owner = config.services.qbittorrent.user;
     restartUnits = [ "qbittorrent.service" ];

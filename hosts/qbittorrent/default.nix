@@ -29,7 +29,6 @@
   };
 
   sops.defaultSopsFile = ../../secrets/qbittorrent.yaml;
-  sops.secrets."wireguard/privateKey" = { };
 
   system.stateVersion = "26.05";
 }
