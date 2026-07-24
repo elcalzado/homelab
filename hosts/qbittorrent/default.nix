@@ -15,21 +15,19 @@
     nameservers = [ "10.0.30.1" ];
   };
 
-  # --- NFS share on TrueNAS ---
-  fileSystems."/mnt/downloads" = {
-    device = "truenas.home.arpa:/mnt/Storage/quarantine";
+  users.groups.entertainment.gid = 3000;
+
+  fileSystems."/mnt/entertainment" = {
+    device = "truenas.home.arpa:/mnt/Storage/entertainment";
     fsType = "nfs";
     options = [
       "nfsvers=4"
       "_netdev"
       "noauto"
       "x-systemd.automount"
-      "x-systemd.idle-timeout=600"
     ];
   };
 
-  # --- Secrets ---
-  # sops.age.keyFile comes from common.nix; only the host-specific file differs.
   sops.defaultSopsFile = ../../secrets/qbittorrent.yaml;
   sops.secrets."wireguard/privateKey" = { };
 
