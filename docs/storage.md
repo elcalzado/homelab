@@ -31,3 +31,10 @@ To create `torrents/` and `library/` run:
 ```bash
 install -d -o root -g entertainment -m 770 /mnt/Storage/entertainment/torrents /mnt/Storage/entertainment/library
 ```
+
+To create the `entertainment` subdirectories:
+```bash
+install -d -o root -g entertainment -m 770 \
+  /mnt/Storage/entertainment/torrents/{movies,tv,music,books} \
+  /mnt/Storage/entertainment/library/{movies,tv,music,books}
+```

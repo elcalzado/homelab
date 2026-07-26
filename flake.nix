@@ -40,6 +40,7 @@
         (mkHost "glance")
         // (mkHost "qbittorrent")
         // (mkHost "omada")
-        // (mkHost "servarr");
+        // (mkHost "servarr")
+        // (mkHost "jellyfin");
     };
 }
