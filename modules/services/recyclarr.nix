@@ -3,19 +3,15 @@
   services.recyclarr = {
     enable = true;
     schedule = "daily";
-
-    configuration = {
-      radarr.main = {
-        base_url = "http://localhost:7878";
-        api_key._secret = config.sops.secrets."recyclarr/radarr-api-key".path;
-        quality_definition.type = "movie";
-      };
-      sonarr.main = {
-        base_url = "http://localhost:8989";
-        api_key._secret = config.sops.secrets."recyclarr/sonarr-api-key".path;
-        quality_definition.type = "series";
-      };
+    configuration = import ../../configs/recyclarr/config.nix {
+      radarrApiKeyPath = config.sops.secrets."recyclarr/radarr-api-key".path;
+      sonarrApiKeyPath = config.sops.secrets."recyclarr/sonarr-api-key".path;
     };
+  };
+
+  systemd.services.recyclarr = {
+    after = [ "network-online.target" ];
+    wants = [ "network-online.target" ];
   };
 
   sops.secrets."recyclarr/radarr-api-key" = { };
