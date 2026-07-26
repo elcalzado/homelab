@@ -18,7 +18,7 @@ Datasets are named and separated based on the data they hold and how important t
 ```bash
 entertainment/
 ├── torrents/
-│   └── movies/ tv/ music/ books/
+│   └── temp/
 └── library/
     └── movies/ tv/ music/ books/
 ```
@@ -32,9 +32,8 @@ To create `torrents/` and `library/` run:
 install -d -o root -g entertainment -m 770 /mnt/Storage/entertainment/torrents /mnt/Storage/entertainment/library
 ```
 
-To create the `entertainment` subdirectories:
+To create the `library` subdirectories:
 ```bash
 install -d -o root -g entertainment -m 770 \
-  /mnt/Storage/entertainment/torrents/{movies,tv,music,books} \
   /mnt/Storage/entertainment/library/{movies,tv,music,books}
 ```
