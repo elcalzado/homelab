@@ -23,9 +23,8 @@
     options = [
       "nfsvers=4"
       "_netdev"
-      "noauto"
-      "x-systemd.automount"
       "ro"
+      "nofail"
     ];
   };
 
