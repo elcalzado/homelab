@@ -81,10 +81,16 @@ in
     clamav.updater.enable = true;
   };
 
-  sops.secrets."wireguard/privateKey" = { };
-  sops.secrets."webui/passwordHash" = {
-    owner = config.services.qbittorrent.user;
-    restartUnits = [ "qbittorrent.service" ];
+  sops.secrets = {
+    "wireguard/privateKey" = { };
+    "webui/passwordHash" = {
+      owner = config.services.qbittorrent.user;
+      restartUnits = [ "qbittorrent.service" ];
+    };
+    "webui/apiKey" = {
+      owner = config.services.qbittorrent.user;
+      restartUnits = [ "qbittorrent.service" ];
+    };
   };
 
   systemd = {
@@ -98,11 +104,12 @@ in
       unitConfig.RequiresMountsFor = [ mountDir ];
       after = [ "wg-quick-wg0.service" ];
       # Rewrite the config authoritatively on every start, then append the WebUI
-      # password hash from the sops secret.
+      # password hash and API key from the sops secrets.
       restartTriggers = [ qbtConfBase ];
       preStart = ''
         ${pkgs.coreutils}/bin/install -m600 ${qbtConfBase} ${configFile}
         printf 'WebUI\\Password_PBKDF2=%s\n' "$(${pkgs.coreutils}/bin/cat ${config.sops.secrets."webui/passwordHash".path})" >> ${configFile}
+        printf 'WebUI\\APIKey=%s\n' "$(${pkgs.coreutils}/bin/cat ${config.sops.secrets."webui/apiKey".path})" >> ${configFile}
       '';
     };
 
