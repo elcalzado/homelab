@@ -3,6 +3,7 @@
   imports = [
     ../../modules/common.nix
     ../../modules/services/prowlarr.nix
+    ../../modules/services/flaresolverr.nix
     ../../modules/services/sonarr.nix
     ../../modules/services/radarr.nix
     ../../modules/services/bazarr.nix
