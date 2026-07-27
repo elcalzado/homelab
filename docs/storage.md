@@ -20,7 +20,7 @@ entertainment/
 ├── torrents/
 │   └── temp/
 └── library/
-    └── movies/ tv/ music/ books/
+    └── movies/ shows/ songs/ books/
 ```
 
 ## NAS
@@ -35,5 +35,5 @@ install -d -o root -g entertainment -m 770 /mnt/Storage/entertainment/torrents /
 To create the `library` subdirectories:
 ```bash
 install -d -o root -g entertainment -m 770 \
-  /mnt/Storage/entertainment/library/{movies,tv,music,books}
+  /mnt/Storage/entertainment/library/{movies,shows,songs,books}
 ```
