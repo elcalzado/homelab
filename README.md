@@ -1,7 +1,9 @@
 # Homelab
 
-NixOS homelab. Every machine is declared in `flake.nix` and built with
-`nixos-rebuild switch --flake .#<output>`.
+NixOS homelab. Every machine is declared in `flake.nix` and built with:
+```bash
+nixos-rebuild switch --flake .#<output>
+```
 
 ## Design
 Host files (`hosts/`) are platform-agnostic and describe WHAT a machine runs.
