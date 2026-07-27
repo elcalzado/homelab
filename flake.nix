@@ -41,6 +41,7 @@
         // (mkHost "qbittorrent")
         // (mkHost "omada")
         // (mkHost "servarr")
-        // (mkHost "jellyfin");
+        // (mkHost "jellyfin")
+        // (mkHost "vaultwarden");
     };
 }

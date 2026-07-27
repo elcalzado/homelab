@@ -5,10 +5,11 @@
 | Host        | Address       | Platform |
 |-------------|---------------|----------|
 | omada       | `10.0.10.2`   | LXC      |
-| glance      | `10.0.30.6`   | LXC      |
 | qbittorrent | `10.0.30.5`   | VM       |
-| servarr     | `10.0.30.8`   | VM       |
+| glance      | `10.0.30.6`   | LXC      |
 | jellyfin    | `10.0.30.7`   | VM       |
+| servarr     | `10.0.30.8`   | VM       |
+| vaultwarden | `10.0.30.9`   | LXC      |
 
 ## qbittorrent VPN / kill-switch
 
