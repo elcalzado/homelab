@@ -6,6 +6,7 @@ checklist that can be followed without re-deriving anything.
 | Runbook | Use it when |
 |---------|-------------|
 | [new-host.md](new-host.md) | Spinning up a new service on a new LXC or VM |
+| [arr-stack.md](arr-stack.md) | Wiring the *arr apps + qBittorrent + Jellyfin into a pipeline |
 | [updating.md](updating.md) | Updating `flake.lock` / upgrading packages |
 | [rollback.md](rollback.md) | A rebuild broke something and you need to recover |
 
