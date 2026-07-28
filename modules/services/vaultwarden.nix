@@ -2,10 +2,9 @@
 
 let
   domain = "vaultwarden.guster.xyz";
-  address = "10.0.30.9";
   backendPort = 8222;
   tlsDir = "/var/lib/nginx-tls";
-  caddy = "lab_proxy.home.arpa";
+  caddy = "lab-proxy.home.arpa";
 in
 {
   services.vaultwarden = {
@@ -20,10 +19,11 @@ in
     };
   };
 
-  sops.secrets."vaultwarden/adminToken" = { };
+  sops.secrets."vaultwarden/adminToken" = {
+    restartUnits = [ "vaultwarden.service" ];
+  };
 
-
-  systemd.services.nginx-selfsigned-cert = {
+  systemd.services.vaultwarden-nginx-cert = {
     description = "Self-signed TLS certificate for ${domain}";
     before = [ "nginx.service" ];
     requiredBy = [ "nginx.service" ];
@@ -39,17 +39,25 @@ in
     };
 
     script = ''
-      [ -s ${tlsDir}/cert.pem ] && [ -s ${tlsDir}/key.pem ] && exit 0
+      if [ -s ${tlsDir}/cert.pem ] && [ -s ${tlsDir}/key.pem ] \
+        && [ "$(cat ${tlsDir}/subject 2>/dev/null)" = "${domain}" ] \
+        && ${pkgs.openssl}/bin/openssl x509 -in ${tlsDir}/cert.pem -checkend 2592000 -noout
+      then
+        exit 0
+      fi
+
+      rm -f ${tlsDir}/cert.pem ${tlsDir}/key.pem ${tlsDir}/subject
 
       ${pkgs.openssl}/bin/openssl req -x509 -nodes -days 3650 \
         -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 \
         -subj "/CN=${domain}" \
-        -addext "subjectAltName=DNS:${domain},IP:${address}" \
+        -addext "subjectAltName=DNS:${domain}" \
         -addext "basicConstraints=critical,CA:TRUE" \
         -addext "keyUsage=critical,digitalSignature,keyEncipherment,keyCertSign" \
         -addext "extendedKeyUsage=serverAuth" \
         -keyout ${tlsDir}/key.pem -out ${tlsDir}/cert.pem
 
+      printf '%s' "${domain}" > ${tlsDir}/subject
       chmod 0400 ${tlsDir}/key.pem
       chmod 0444 ${tlsDir}/cert.pem
     '';
