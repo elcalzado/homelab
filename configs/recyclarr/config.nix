@@ -275,7 +275,7 @@
       }
       {
         trash_ids = [ "418f50b10f1907201b6cfdf881f467b7" ]; # Anime Dual Audio
-        assign_scores_to = [ { name = "Anime"; score = 100; } ];
+        assign_scores_to = [ { name = "Anime"; score = 300; } ];
       }
       {
         trash_ids = [ "026d5aadd1a6b4e550b134cb6c72b3ca" ]; # Uncensored
