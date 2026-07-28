@@ -4,7 +4,8 @@ let
   domain = "vaultwarden.guster.xyz";
   backendPort = 8222;
   tlsDir = "/var/lib/nginx-tls";
-  caddy = "lab-proxy.home.arpa";
+  caddySource = "10.0.30.1";
+  adminSubnet = "10.0.100.0/28";
 in
 {
   services.vaultwarden = {
@@ -15,7 +16,6 @@ in
       SIGNUPS_ALLOWED = false;
       ROCKET_ADDRESS = "127.0.0.1";
       ROCKET_PORT = backendPort;
-      ENABLE_WEBSOCKET = true;
     };
   };
 
@@ -67,12 +67,11 @@ in
     enable = true;
     recommendedProxySettings = true;
     recommendedOptimisation = true;
-    recommendedGzipSettings = true;
     recommendedTlsSettings = true;
     clientMaxBodySize = "525m";
 
     commonHttpConfig = ''
-      set_real_ip_from ${caddy};
+      set_real_ip_from ${caddySource};
       real_ip_header X-Forwarded-For;
       real_ip_recursive on;
     '';
@@ -86,6 +85,13 @@ in
 
       locations = {
         "/".proxyPass = "http://vaultwarden";
+        "^~ /admin" = {
+          proxyPass = "http://vaultwarden";
+          extraConfig = ''
+            allow ${adminSubnet};
+            deny all;
+          '';
+        };
         "= /notifications/hub" = {
           proxyPass = "http://vaultwarden";
           proxyWebsockets = true;
