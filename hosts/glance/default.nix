@@ -15,5 +15,7 @@
     nameservers = [ "10.0.30.1" ];
   };
 
+  sops.defaultSopsFile = ../../secrets/glance.yaml;
+
   system.stateVersion = "26.05";
 }

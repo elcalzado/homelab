@@ -23,10 +23,7 @@ in
   security.sudo.wheelNeedsPassword = true;
 
   sops.age.keyFile = "/var/lib/sops-nix/key.txt";
-  sops.secrets."guster/passwordHash" = {
-    sopsFile = ../secrets/common.yaml;
-    neededForUsers = true;
-  };
+  sops.secrets."guster/passwordHash".neededForUsers = true;
 
   users = {
     mutableUsers = false;
