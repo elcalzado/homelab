@@ -9,6 +9,7 @@ checklist that can be followed without re-deriving anything.
 | [arr-stack.md](arr-stack.md) | Wiring the *arr apps + qBittorrent + Jellyfin into a pipeline |
 | [updating.md](updating.md) | Updating `flake.lock` / upgrading packages |
 | [rollback.md](rollback.md) | A rebuild broke something and you need to recover |
+| [restore.md](restore.md) | A service lost its database or config and needs a dump from `backups` |
 
 ## The model
 

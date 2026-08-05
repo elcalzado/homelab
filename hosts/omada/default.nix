@@ -17,5 +17,7 @@
     nameservers = [ "10.0.10.1" ];
   };
 
+  sops.defaultSopsFile = ../../secrets/omada.yaml;
+
   system.stateVersion = "26.05";
 }

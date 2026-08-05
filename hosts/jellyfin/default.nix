@@ -18,7 +18,7 @@
   users.groups.entertainment.gid = 3000;
 
   fileSystems."/mnt/entertainment" = {
-    device = "truenas.home.arpa:/mnt/Storage/entertainment";
+    device = "truenas.home.arpa:/mnt/blueberry/entertainment";
     fsType = "nfs";
     options = [
       "nfsvers=4"
@@ -27,6 +27,8 @@
       "nofail"
     ];
   };
+
+  sops.defaultSopsFile = ../../secrets/jellyfin.yaml;
 
   system.stateVersion = "26.05";
 }

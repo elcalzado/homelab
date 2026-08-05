@@ -23,6 +23,7 @@ produces two outputs from one definition:
 - `configs/`  per-service config templates (rendered by service modules)
 - `scripts/`  per-service helper scripts (embedded into modules)
 - `proxmox/`  Proxmox-host notes + container-creation scripts
+- `truenas/`  NAS-side config the flake doesn't build
 - `docs/`     network map, storage layout, and runbooks
 
 ## Hosts

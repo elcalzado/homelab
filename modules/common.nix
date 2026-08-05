@@ -4,7 +4,10 @@ let
   gusterUid = 1000;
 in
 {
-  imports = [ inputs.sops-nix.nixosModules.sops ];
+  imports = [
+    inputs.sops-nix.nixosModules.sops
+    ./backup.nix
+  ];
 
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
 
