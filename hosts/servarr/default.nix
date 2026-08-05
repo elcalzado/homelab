@@ -24,7 +24,7 @@
   users.groups.entertainment.gid = 3000;
 
   fileSystems."/mnt/entertainment" = {
-    device = "truenas.home.arpa:/mnt/Storage/entertainment";
+    device = "truenas.home.arpa:/mnt/blueberry/entertainment";
     fsType = "nfs";
     options = [
       "nfsvers=4"
