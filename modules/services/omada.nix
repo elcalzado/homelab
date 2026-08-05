@@ -60,8 +60,33 @@ let
   };
 
   dataDirs = [ "db" "keystore" "autobackup" "pdf" "cluster" "device-firmware" "chromium" "check-mongo" ];
+
+  autoBackupStaleAfterHours = 48;
+
+  propertiesFile = "${omadaHome}/properties/omada.properties";
+  autoBackupDir  = "${stateDir}/data/autobackup";
+  keystoreDir    = "${stateDir}/data/keystore";
+  mongoDumpDir   = "${stateDir}/mongodump";
+
+  mongoDump = pkgs.writeShellApplication {
+    name = "omada-mongodump";
+    runtimeInputs = with pkgs; [ coreutils gnused mongodb-tools ];
+    text = ''
+      PROPERTIES=${lib.escapeShellArg propertiesFile}
+      DUMP_DIR=${lib.escapeShellArg mongoDumpDir}
+      ${builtins.readFile ../../scripts/omada/mongodump.sh}
+    '';
+  };
 in
 {
+  homelab.backup.jobs.omada = {
+    at = "01:20";
+    trees = [ autoBackupDir keystoreDir mongoDumpDir ];
+    files = [ propertiesFile ];
+    maxAge = autoBackupStaleAfterHours;
+    maxAgePaths = [ autoBackupDir ];
+  };
+
   users.groups.${omadaUser}.gid = omadaUid;
   users.users.${omadaUser} = {
     isSystemUser = true;
@@ -70,78 +95,104 @@ in
     home  = stateDir;
   };
 
-  systemd.tmpfiles.rules = [
-    "d  /opt/tplink                              0755 root         root         -"
-    "d  ${omadaHome}                             0755 ${omadaUser} ${omadaUser} -"
-    "d  ${omadaHome}/bin                         0755 ${omadaUser} ${omadaUser} -"
-    "d  ${omadaHome}/lib                         0755 ${omadaUser} ${omadaUser} -"
-    "d  ${omadaHome}/properties                  0750 ${omadaUser} ${omadaUser} -"
-    "L+ ${omadaHome}/bin/mongod                  - - - - ${mongodBin}"
-    "L+ ${omadaHome}/data                        - - - - ${stateDir}/data"
-    "L+ ${omadaHome}/logs                        - - - - ${stateDir}/logs"
-    "L+ ${omadaHome}/work                        - - - - ${stateDir}/work"
-    "d  ${stateDir}                              0750 ${omadaUser} ${omadaUser} -"
-    "d  ${stateDir}/data                         0750 ${omadaUser} ${omadaUser} -"
-    "d  ${stateDir}/logs                         0750 ${omadaUser} ${omadaUser} -"
-    "d  ${stateDir}/work                         0750 ${omadaUser} ${omadaUser} -"
-    "L+ ${stateDir}/data/html                    - - - - ${omada-controller}/data/html"
-    "L+ ${stateDir}/data/static                  - - - - ${omada-controller}/data/static"
-    # log4j2 tracks the store read-only; omada.properties is a writable copy the controller rewrites
-    "C  ${omadaHome}/properties/omada.properties  0640 ${omadaUser} ${omadaUser} - ${omada-controller}/properties/omada.properties"
-    "L+ ${omadaHome}/properties/log4j2.properties - - - - ${omada-controller}/properties/log4j2.properties"
-  ] ++ map (d: "d ${stateDir}/data/${d} 0750 ${omadaUser} ${omadaUser} -") dataDirs;
+  systemd = {
+    tmpfiles.rules = [
+      "d  /opt/tplink                              0755 root         root         -"
+      "d  ${omadaHome}                             0755 ${omadaUser} ${omadaUser} -"
+      "d  ${omadaHome}/bin                         0755 ${omadaUser} ${omadaUser} -"
+      "d  ${omadaHome}/lib                         0755 ${omadaUser} ${omadaUser} -"
+      "d  ${omadaHome}/properties                  0750 ${omadaUser} ${omadaUser} -"
+      "L+ ${omadaHome}/bin/mongod                  - - - - ${mongodBin}"
+      "L+ ${omadaHome}/data                        - - - - ${stateDir}/data"
+      "L+ ${omadaHome}/logs                        - - - - ${stateDir}/logs"
+      "L+ ${omadaHome}/work                        - - - - ${stateDir}/work"
+      "d  ${stateDir}                              0750 ${omadaUser} ${omadaUser} -"
+      "d  ${mongoDumpDir}                          0750 ${omadaUser} ${omadaUser} -"
+      "d  ${stateDir}/data                         0750 ${omadaUser} ${omadaUser} -"
+      "d  ${stateDir}/logs                         0750 ${omadaUser} ${omadaUser} -"
+      "d  ${stateDir}/work                         0750 ${omadaUser} ${omadaUser} -"
+      "L+ ${stateDir}/data/html                    - - - - ${omada-controller}/data/html"
+      "L+ ${stateDir}/data/static                  - - - - ${omada-controller}/data/static"
+      # log4j2 tracks the store read-only; omada.properties is a writable copy the controller rewrites
+      "C  ${omadaHome}/properties/omada.properties  0640 ${omadaUser} ${omadaUser} - ${omada-controller}/properties/omada.properties"
+      "L+ ${omadaHome}/properties/log4j2.properties - - - - ${omada-controller}/properties/log4j2.properties"
+    ] ++ map (d: "d ${stateDir}/data/${d} 0750 ${omadaUser} ${omadaUser} -") dataDirs;
 
-  systemd.services.omada = {
-    description = "TP-Link Omada SDN Controller";
-    wantedBy = [ "multi-user.target" ];
-    after    = [ "network-online.target" ];
-    wants    = [ "network-online.target" ];
+    services.omada-mongodump = {
+      description = "Dump the Omada MongoDB for backup";
+      before = [ "backup-omada.service" ];
+      wantedBy = [ "backup-omada.service" ];
+      onFailure = [ "backup-failed@omada-mongodump.service" ];
 
-    restartTriggers = [ omada-controller pkgs.commons-daemon jsvc ];
-
-    path = [ pkgs.bash ];   # Omada execs `sh` to spawn its child mongod
-
-    environment = {
-      HOME            = stateDir;
-      OMADA_HOME      = omadaHome;
-      XDG_CONFIG_HOME = "${omadaHome}/data/chromium";
+      serviceConfig = {
+        Type = "oneshot";
+        User = omadaUser;
+        Group = omadaUser;
+        ExecStart = lib.getExe mongoDump;
+        UMask = "0077";
+        ReadWritePaths = [ stateDir ];
+        ProtectSystem = "strict";
+        ProtectHome = true;
+        PrivateTmp = true;
+        NoNewPrivileges = true;
+        TimeoutStartSec = "30m";
+        Nice = 10;
+        IOSchedulingClass = "idle";
+      };
     };
 
-    serviceConfig = {
-      Type  = "simple";
-      User  = omadaUser;
-      Group = omadaUser;
+    services.omada = {
+      description = "TP-Link Omada SDN Controller";
+      wantedBy = [ "multi-user.target" ];
+      after    = [ "network-online.target" ];
+      wants    = [ "network-online.target" ];
 
-      RuntimeDirectory = "omada";
-      WorkingDirectory = "${omadaHome}/lib";
-      ExecStart = lib.concatStringsSep " " ([
-        jsvcBin "-nodetach" "-home" jre.home "-cwd" "${omadaHome}/lib"
-        "-procname" "omada" "-pidfile" "/run/omada/omada.pid"
-        "-outfile" "&2" "-errfile" "&2" "-cp" classpath
-      ] ++ javaOpts ++ [ mainClass "start" ]);
-      ExecStop = lib.concatStringsSep " " [
-        jsvcBin "-stop" "-home" jre.home "-cwd" "${omadaHome}/lib"
-        "-pidfile" "/run/omada/omada.pid" "-cp" classpath mainClass "stop"
-      ];
+      restartTriggers = [ omada-controller pkgs.commons-daemon jsvc ];
 
-      Restart         = "on-failure";
-      RestartSec      = 10;
-      TimeoutStartSec = 300;
-      TimeoutStopSec  = 120;
-      LimitNOFILE     = 65536;
+      path = [ pkgs.bash ];   # Omada execs `sh` to spawn its child mongod
 
-      NoNewPrivileges       = true;
-      PrivateTmp            = true;
-      ProtectSystem         = "strict";
-      ReadWritePaths        = [ omadaHome stateDir ];
-      # Bind-mount (not symlink) the store jars at the /opt path, so Omada's realpath() of a
-      # loaded jar stays under /opt instead of the read-only Nix store.
-      BindReadOnlyPaths     = [ "${omada-controller}/lib:${omadaHome}/lib" ];
-      ProtectHome           = true;
-      ProtectControlGroups  = true;
-      ProtectKernelTunables = true;
-      RestrictSUIDSGID      = true;
-      # Don't add MemoryDenyWriteExecute or SystemCallFilter: they break the JVM JIT and the mongod fork.
+      environment = {
+        HOME            = stateDir;
+        OMADA_HOME      = omadaHome;
+        XDG_CONFIG_HOME = "${omadaHome}/data/chromium";
+      };
+
+      serviceConfig = {
+        Type  = "simple";
+        User  = omadaUser;
+        Group = omadaUser;
+
+        RuntimeDirectory = "omada";
+        WorkingDirectory = "${omadaHome}/lib";
+        ExecStart = lib.concatStringsSep " " ([
+          jsvcBin "-nodetach" "-home" jre.home "-cwd" "${omadaHome}/lib"
+          "-procname" "omada" "-pidfile" "/run/omada/omada.pid"
+          "-outfile" "&2" "-errfile" "&2" "-cp" classpath
+        ] ++ javaOpts ++ [ mainClass "start" ]);
+        ExecStop = lib.concatStringsSep " " [
+          jsvcBin "-stop" "-home" jre.home "-cwd" "${omadaHome}/lib"
+          "-pidfile" "/run/omada/omada.pid" "-cp" classpath mainClass "stop"
+        ];
+
+        Restart         = "on-failure";
+        RestartSec      = 10;
+        TimeoutStartSec = 300;
+        TimeoutStopSec  = 120;
+        LimitNOFILE     = 65536;
+
+        NoNewPrivileges       = true;
+        PrivateTmp            = true;
+        ProtectSystem         = "strict";
+        ReadWritePaths        = [ omadaHome stateDir ];
+        # Bind-mount (not symlink) the store jars at the /opt path, so Omada's realpath() of a
+        # loaded jar stays under /opt instead of the read-only Nix store.
+        BindReadOnlyPaths     = [ "${omada-controller}/lib:${omadaHome}/lib" ];
+        ProtectHome           = true;
+        ProtectControlGroups  = true;
+        ProtectKernelTunables = true;
+        RestrictSUIDSGID      = true;
+        # Don't add MemoryDenyWriteExecute or SystemCallFilter: they break the JVM JIT and the mongod fork.
+      };
     };
   };
 

@@ -19,7 +19,9 @@ let
   webuiPort = 8080;
 
   profileDir = "/var/lib/qbittorrent";
-  configFile = "${profileDir}/qBittorrent/config/qBittorrent.conf";
+  configDir  = "${profileDir}/qBittorrent/config";
+  resumeDir  = "${profileDir}/qBittorrent/data/BT_backup";
+  configFile = "${configDir}/qBittorrent.conf";
   scanLog  = "/var/log/qbittorrent/clamav_scan.log";
   clamavDb = "/var/lib/clamav";
 
@@ -91,6 +93,12 @@ in
       owner = config.services.qbittorrent.user;
       restartUnits = [ "qbittorrent.service" ];
     };
+  };
+
+  homelab.backup.jobs.qbittorrent = {
+    at = "03:00";
+    trees = [ resumeDir configDir ];
+    excludes = [ "qBittorrent.conf" "lockfile" ];
   };
 
   systemd = {
