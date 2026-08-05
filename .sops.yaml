@@ -2,6 +2,27 @@
 # sops-nix configuration: which age recipients may decrypt files under secrets/.
 #
 creation_rules:
-  - path_regex: secrets/.*\.yaml$
+  - path_regex: secrets/glance\.yaml$
     age: >-
-      age1fd97d23sf9ws2g28h0m6uwe5etfjvqvnhkklcrtvcrt5qwsv4fhsqpwg7h
+      age1kl09huvuxkrql2c2y8cwmlz9arwa5heyv8ww6ya050vm58x7t39selucl5,
+      age1sv5zehntfzq7llmvp3ax80604zw0xq6ldkhyqeg0ut5729ktvddsg87wah
+
+  - path_regex: secrets/jellyfin\.yaml$
+    age: >-
+      age1tzx8y5rmys04ylztsqxyv4f2xwmhudelxme8nfaydxx7sj9ke4hqe7l8fa,
+      age1sv5zehntfzq7llmvp3ax80604zw0xq6ldkhyqeg0ut5729ktvddsg87wah
+
+  - path_regex: secrets/omada\.yaml$
+    age: >-
+      age1s5339c66nxkywz2xwf388e2x6la35057e5qxnmrv3km5h22pxcuqungaag,
+      age1sv5zehntfzq7llmvp3ax80604zw0xq6ldkhyqeg0ut5729ktvddsg87wah
+
+  - path_regex: secrets/qbittorrent\.yaml$
+    age: >-
+      age1ecm8faa7dk6m77stglxhnurxhc38jandmp8l4a6wr2ch56athensrxdj2h,
+      age1sv5zehntfzq7llmvp3ax80604zw0xq6ldkhyqeg0ut5729ktvddsg87wah
+
+  - path_regex: secrets/servarr\.yaml$
+    age: >-
+      age19z3xd6a6ahv5ganss5ps33fcy2wjzh55jegj3gh8ed75ls4xndhqlscu3x,
+      age1sv5zehntfzq7llmvp3ax80604zw0xq6ldkhyqeg0ut5729ktvddsg87wah

@@ -1,22 +1,28 @@
 # Secrets (sops-nix)
 
-## Setup
+One age keypair per host plus an admin keypair on the workstation. Each
+`<host>.yaml` is encrypted to that host's key and the admin key, so a host
+decrypts only its own secrets.
 
-1. Generate a keypair with `age-keygen -o key.txt`. Place the public key in `.sops.yaml`.
+`.sops.yaml` has a rule per file and no catch-all so a new host errors with "no
+matching creation rules found" until you add one.
 
-2. Install the private key on the host at `/var/lib/sops-nix/key.txt`and do:
-   ```bash
-   chmod 600 /var/lib/sops-nix/key.txt
-   ```
-
-3. Paste your secret into `<host>.yaml`, then:
-   ```bash
-   sops -e -i secrets/<host>.yaml
-   ```
-   Confirm the file is now ciphertext before committing.
-
-## Editing later
+## Adding a host
 
 ```bash
-sops secrets/*.yaml    # decrypts to $EDITOR, re-encrypts on save
+age-keygen -o age-<host>.txt          # private half -> password manager
+age-keygen -y age-<host>.txt          # public half  -> a new .sops.yaml rule
+install -m 0600 age-<host>.txt /var/lib/sops-nix/key.txt   # on the host
+sops secrets/<host>.yaml              # then set sops.defaultSopsFile
+```
+
+Every host needs `guster/passwordHash` (`mkpasswd -m yescrypt`), or `guster` has
+no password and no `sudo` and root login and SSH passwords are both off.
+
+## Editing
+
+Run sops from the repo root so `path_regex` matches.
+
+```bash
+sops secrets/<host>.yaml              # edit
 ```
