@@ -3,14 +3,17 @@
 **Goal:** put a service's database and config back from a dump on the NAS, either
 the current one or a point-in-time snapshot.
 
-Two things about this pipeline shape the procedure:
+Three things about this pipeline shape the procedure:
 
 - The host's key is confined to `rrsync -wo`, so a host cannot read its own
-  backups. Restores move the other direction and are driven from your
-  workstation, which already has SSH to both ends. No standing NAS-to-host access
-  is created.
+  backups. Restores are driven from your workstation, which has SSH to both ends.
+- The dumps are `0700 backups:backups`, so reading them on the NAS needs `sudo`.
 - Ownership is not preserved. Every file on the NAS belongs to the `backups`
   user, so each restore ends with a `chown`.
+
+> Never pipe `tar` straight from the NAS into a host. Both ends need `sudo`,
+> `sudo` needs a TTY, and a TTY mangles a binary stream. Every step below writes
+> the tarball to a file and moves it with `scp`.
 
 ---
 
@@ -18,12 +21,13 @@ Two things about this pipeline shape the procedure:
 
 Current dump:
 ```bash
-ssh truenas ls -la /mnt/blueberry/backups/<host>/<service>/
+ssh -t guster@truenas.home.arpa 'sudo ls -la /mnt/blueberry/backups/<host>/<service>/'
 ```
 
-A point-in-time copy, from any snapshot listed by `zfs list -t snapshot`. Snapshots are taken per host, so `.zfs` sits at the host dataset root and the service is a directory inside it:
+A point-in-time copy. Snapshots are taken per host, so `.zfs` sits at the host
+dataset root and the service is a directory inside it:
 ```bash
-ssh truenas ls /mnt/blueberry/backups/<host>/.zfs/snapshot/
+ssh -t guster@truenas.home.arpa 'sudo ls /mnt/blueberry/backups/<host>/.zfs/snapshot/'
 ```
 Everything below works the same against a `.zfs/snapshot/<name>/<service>/` path.
 
@@ -33,53 +37,81 @@ Everything below works the same against a `.zfs/snapshot/<name>/<service>/` path
 
 ---
 
-## Step 2 — Stop the service
+## Step 2 — Pull the dump to your workstation
 
 ```bash
-ssh guster@<host> sudo systemctl stop <unit>
+ssh -t guster@truenas.home.arpa \
+  'sudo tar -C /mnt/blueberry/backups/<host>/<service> -cf /tmp/<service>.tar . \
+   && sudo chown guster /tmp/<service>.tar'
+
+scp guster@truenas.home.arpa:/tmp/<service>.tar /tmp/
 ```
 
-Leave it stopped until the last step. Restoring underneath a running service
-corrupts the database.
+The `chown` is what lets `scp` fetch it without `sudo`.
 
 ---
 
-## Step 3 — Move the current state aside
+## Step 3 — Verify the dump before touching the service
+
+```bash
+mkdir -p /tmp/verify && tar -C /tmp/verify -xf /tmp/<service>.tar && ls -la /tmp/verify
+sqlite3 /tmp/verify/<database> 'PRAGMA quick_check;'
+```
+
+`ok` plus a plausible file listing means the dump is sound. Stop here if all you
+wanted was to confirm the pipeline works — nothing so far has touched the host.
+
+---
+
+## Step 4 — Stop the service
+
+```bash
+ssh -t guster@<host>.home.arpa 'sudo systemctl stop <unit>'
+```
+
+Leave it stopped until Step 6. Restoring underneath a running service corrupts
+the database.
+
+---
+
+## Step 5 — Move the current state aside
 
 Don't delete it!
 
 ```bash
-ssh guster@<host> "sudo mv <target> <target>.pre-restore"
-ssh guster@<host> "sudo install -d -m 0700 <target>"
+ssh -t guster@<host>.home.arpa 'sudo mv <target> <target>.pre-restore'
 ```
 
 ---
 
-## Step 4 — Copy the dump in
+## Step 6 — Extract, fix ownership, start
 
-Piped through your workstation, so neither end needs new credentials:
+`<target>` is the directory on the host from the tables below. For a
+single-target service, extract the whole tarball into a fresh one:
 
 ```bash
-ssh truenas "tar -C /mnt/blueberry/backups/<host>/<service> -cf - ." \
-  | ssh guster@<host> "sudo tar -C <target> -xf -"
+scp /tmp/<service>.tar guster@<host>.home.arpa:/tmp/
+
+ssh -t guster@<host>.home.arpa '
+  sudo install -d -m 0700 <target> &&
+  sudo tar -C <target> -xf /tmp/<service>.tar &&
+  sudo chown -R <owner> <target> &&
+  sudo systemctl start <unit>'
 ```
 
----
-
-## Step 5 — Fix ownership, then start
+For a **split-target** service the tarball's entries belong in different places,
+so unpack to a scratch directory first and move each one:
 
 ```bash
-ssh guster@<host> "sudo chown -R <owner> <target>"
-ssh guster@<host> sudo systemctl start <unit>
+ssh -t guster@<host>.home.arpa '
+  mkdir -p /tmp/restore && tar -C /tmp/restore -xf /tmp/<service>.tar && ls -la /tmp/restore'
 ```
+Then copy each entry to its own destination per the split table, `chown -R`, and
+start the unit.
 
 ---
 
-## Lookup table
-
-Databases and single files sit at the root of the dataset. Directories keep their
-own name, so a service whose whole state directory is backed up appears one level
-down.
+## Lookup tables
 
 | Service | Host | Unit | Owner |
 |---|---|---|---|
@@ -91,28 +123,30 @@ down.
 | seerr | servarr | `seerr` | systemd re-owns |
 | qbittorrent | qbittorrent | `qbittorrent` | `qbittorrent:entertainment` |
 
-Single-target services:
+`prowlarr` and `seerr` run under `DynamicUser`, so their uid is allocated fresh
+at every start and systemd re-owns `StateDirectory` to match. Skip the `chown`.
+
+Single-target — extract the tarball straight into the target:
 
 | Service | Dataset holds | Target |
 |---|---|---|
 | sonarr | `sonarr.db`, `config.xml` | `/var/lib/sonarr/.config/NzbDrone` |
 | radarr | `radarr.db`, `config.xml` | `/var/lib/radarr/.config/Radarr` |
 | prowlarr | `prowlarr.db`, `config.xml` | `/var/lib/private/prowlarr` |
-| seerr | `db.sqlite3`, `settings.json` | `/var/lib/private/seerr/db`, `/var/lib/private/seerr` |
-| bazarr | `bazarr.db`, `config.yaml` | `/var/lib/bazarr/db`, `/var/lib/bazarr/config` |
 
-Split-target services:
+Split-target — copy each entry to its own destination, never the tree wholesale:
 
-| Service | Dataset entry | Target |
+| Service | Dataset entry | Destination |
 |---|---|---|
+| bazarr | `bazarr.db` | `/var/lib/bazarr/db/` |
+| bazarr | `config.yaml` | `/var/lib/bazarr/config/` |
+| seerr | `db.sqlite3` | `/var/lib/private/seerr/db/` |
+| seerr | `settings.json` | `/var/lib/private/seerr/` |
 | jellyfin | `jellyfin.db` | `/var/lib/jellyfin/data/` |
 | jellyfin | `config/` | `/var/lib/jellyfin/config/` |
 | jellyfin | `plugins/` | `/var/lib/jellyfin/plugins/` |
 | qbittorrent | `BT_backup/` | `/var/lib/qbittorrent/qBittorrent/data/` |
 | qbittorrent | `categories.json` | `/var/lib/qbittorrent/qBittorrent/config/` |
-
-Jellyfin's `metadata/` and trickplay are not backed up, and neither is *arr
-`MediaCover/`. All of it regenerates on a library scan.
 
 ---
 
@@ -121,7 +155,7 @@ Jellyfin's `metadata/` and trickplay are not backed up, and neither is *arr
 Its dump is the controller's own encrypted `.cfg` plus the keystore. There is no
 file-level database restore.
 
-1. Copy a `.cfg` out of `omada/omada/autobackup/` to your workstation.
+1. Pull a `.cfg` out of `omada/omada/autobackup/` per Step 2.
 2. Controller UI → Settings → Backup & Restore → Restore, and upload it.
 3. Only `keystore/` and `omada.properties` are restored by file copy, to
    `/var/lib/omada/data/keystore` and
@@ -137,12 +171,14 @@ restore, not to put a database back under a running Omada.
 
 ---
 
-## Step 6 — Verify, then clean up
+## Step 7 — Verify, then clean up
 
 Log in and confirm the data is actually there. Only then:
 
 ```bash
-ssh guster@<host> "sudo rm -rf <target>.pre-restore"
+ssh -t guster@<host>.home.arpa 'sudo rm -rf <target>.pre-restore /tmp/<service>.tar'
+ssh -t guster@truenas.home.arpa 'sudo rm -f /tmp/<service>.tar'
+rm -rf /tmp/verify /tmp/<service>.tar
 ```
 
 ## Notes
