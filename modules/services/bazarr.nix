@@ -13,7 +13,7 @@ in
 
   homelab.backup.jobs.bazarr = {
     at = "02:30";
-    databases = [ "${dataDir}/db/bazarr.db" ];
+    databases = [ { engine = "sqlite"; path = "${dataDir}/db/bazarr.db"; } ];
     files = [ "${dataDir}/config/config.yaml" ];
   };
 

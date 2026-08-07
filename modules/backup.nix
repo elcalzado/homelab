@@ -10,11 +10,94 @@ let
 
   shellList = xs: lib.escapeShellArg (lib.concatStringsSep "\n" xs);
 
-  databaseParents = job: lib.unique (map builtins.dirOf job.databases);
+  databaseEntry = lib.types.submodule {
+    options = {
+      engine = lib.mkOption {
+        type = lib.types.enum (lib.attrNames engineFields);
+        description = "Which dump tool handles this database. Always stated.";
+      };
+
+      path = lib.mkOption {
+        type = lib.types.nullOr absolutePath;
+        default = null;
+        description = "sqlite: the database file to copy.";
+      };
+
+      name = lib.mkOption {
+        type = lib.types.nullOr lib.types.str;
+        default = null;
+        description = "postgres: the database to dump. mongodb: the staged directory name.";
+      };
+
+      port = lib.mkOption {
+        type = lib.types.nullOr lib.types.port;
+        default = null;
+        description = "mongodb: the port mongod listens on.";
+      };
+    };
+  };
+
+  engineFields = {
+    sqlite = { required = [ "path" ]; unused = [ "name" "port" ]; };
+    postgres = { required = [ "name" ]; unused = [ "path" "port" ]; };
+    mongodb = { required = [ "name" "port" ]; unused = [ "path" ]; };
+  };
+
+  treeAssertions = jobName: job:
+    map
+      (path: {
+        assertion = lib.elem path job.trees;
+        message = "homelab.backup.jobs.${jobName}.mayBeEmpty names ${path}, which is not one of its trees";
+      })
+      job.mayBeEmpty;
+
+  databaseAssertions = jobName: job:
+    lib.imap0
+      (index: db:
+        let
+          spec = engineFields.${db.engine};
+          missing = lib.filter (field: db.${field} == null) spec.required;
+          ignored = lib.filter (field: db.${field} != null) spec.unused;
+          located = "homelab.backup.jobs.${jobName}.databases.[${toString index}] (${db.engine})";
+        in
+        {
+          assertion = missing == [ ] && ignored == [ ];
+          message = lib.concatStringsSep " " (
+            [ "${located}:" ]
+            ++ lib.optional (missing != [ ]) "must set ${lib.concatStringsSep ", " missing}."
+            ++ lib.optional (ignored != [ ]) "ignores ${lib.concatStringsSep ", " ignored}, so remove it."
+          );
+        })
+      job.databases;
+
+  dumpLine = db:
+    if db.engine == "sqlite" then
+      lib.concatStringsSep "\t" [ "sqlite" db.path (baseNameOf db.path) ]
+    else if db.engine == "postgres" then
+      lib.concatStringsSep "\t" [ "postgres" db.name "${db.name}.sql" ]
+    else
+      lib.concatStringsSep "\t" [ "mongodb" (toString db.port) db.name ];
+
+  sqliteParents = job:
+    lib.unique (
+      map (db: builtins.dirOf db.path) (lib.filter (db: db.engine == "sqlite") job.databases)
+    );
+
+  engineTools = job:
+    lib.concatMap
+      (engine:
+        if engine == "sqlite" then
+          [ pkgs.sqlite ]
+        else if engine == "postgres" then
+          [ config.services.postgresql.package pkgs.util-linux ]
+        else
+          [ pkgs.mongodb-tools ]
+      )
+      (lib.unique (map (db: db.engine) job.databases));
 
   jobRunner = name: job: pkgs.writeShellApplication {
     name = "backup-${name}";
-    runtimeInputs = with pkgs; [ coreutils findutils openssh rsync sqlite ];
+    runtimeInputs = (with pkgs; [ coreutils findutils openssh rsync ]) ++ engineTools job;
     text = ''
       STAGE=${lib.escapeShellArg "${stagingRoot}/${name}"}
       MARKER=${lib.escapeShellArg "${stagingRoot}/${name}.last-success"}
@@ -25,7 +108,8 @@ let
       MAX_DELETE=${toString cfg.maxDelete}
       MAX_AGE_HOURS=${lib.escapeShellArg (lib.optionalString (job.maxAge != null) (toString job.maxAge))}
       MAX_AGE_PATHS=${shellList (if job.maxAgePaths == [ ] then job.trees else job.maxAgePaths)}
-      DATABASES=${shellList job.databases}
+      MAY_BE_EMPTY=${shellList job.mayBeEmpty}
+      DATABASES=${shellList (map dumpLine job.databases)}
       FILES=${shellList job.files}
       TREES=${shellList job.trees}
       EXCLUDES=${shellList job.excludes}
@@ -79,14 +163,17 @@ in
       type = lib.types.attrsOf (lib.types.submodule {
         options = {
           at = lib.mkOption {
-            type = lib.types.strMatching "[0-2][0-9]:[0-5][0-9]";
+            type = lib.types.strMatching "([01][0-9]|2[0-3]):[0-5][0-9]";
             description = "Daily slot, unique among this host's jobs.";
           };
 
           databases = lib.mkOption {
-            type = lib.types.listOf absolutePath;
+            type = lib.types.listOf databaseEntry;
             default = [ ];
-            description = "SQLite files copied through the online backup API, then verified.";
+            description = ''
+              Databases dumped and verified before shipping. Every entry names
+              its engine; an empty list means the job carries no database.
+            '';
           };
 
           files = lib.mkOption {
@@ -105,6 +192,17 @@ in
             type = lib.types.listOf lib.types.str;
             default = [ ];
             description = "rsync patterns withheld from every tree.";
+          };
+
+          mayBeEmpty = lib.mkOption {
+            type = lib.types.listOf absolutePath;
+            default = [ ];
+            description = ''
+              Trees allowed to stage without a single file. Every other tree
+              staging empty is a failure, because an empty mirror would
+              otherwise propagate through `--delete-after` and prune the copy
+              already on the NAS.
+            '';
           };
 
           maxAge = lib.mkOption {
@@ -150,7 +248,7 @@ in
             Type = "oneshot";
             ExecStart = lib.getExe (jobRunner name job);
             UMask = "0077";
-            ReadWritePaths = [ stagingRoot ] ++ databaseParents job;
+            ReadWritePaths = [ stagingRoot ] ++ sqliteParents job;
             ProtectSystem = "strict";
             ProtectHome = true;
             PrivateTmp = true;
@@ -201,6 +299,8 @@ in
           lib.length (lib.unique slots) == lib.length slots;
         message = "homelab.backup.jobs on ${config.networking.hostName} share a slot";
       }
-    ];
+    ]
+    ++ lib.concatLists (lib.mapAttrsToList databaseAssertions cfg.jobs)
+    ++ lib.concatLists (lib.mapAttrsToList treeAssertions cfg.jobs);
   };
 }

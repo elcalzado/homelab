@@ -32,7 +32,8 @@ backups/
 ├── omada/omada/
 ├── jellyfin/jellyfin/
 ├── servarr/{sonarr,radarr,prowlarr,bazarr,seerr}/
-└── qbittorrent/qbittorrent/
+├── qbittorrent/qbittorrent/
+└── immich/immich/
 ```
 
 ## Snapshots
@@ -47,7 +48,16 @@ Three recursive tasks each, on `backups` at 04:00 and `photos` at 05:00:
 
 The tier prefix is what keeps the three from colliding when all of them fire on a Sunday the 1st.
 
-`backups` must not be snapshotted while a job is running because writes are in-place, so a snapshot taken mid-push captures a torn file. Jobs finish by 03:00.
+`backups` must not be snapshotted while a job is running because writes are in-place, so a snapshot taken mid-push captures a torn file. The bound that has to hold is the worst case:
+
+```
+last slot + RandomizedDelaySec + TimeoutStartSec  <  snapshot time
+02:50     + 2m                 + 1h               =  03:52  <  04:00
+```
+
+Timers are `Persistent`, so a host that was down through its slot runs the job on boot instead.
+
+A job that fails partway still ships whatever it managed to stage, then exits non-zero without writing `.last-success`.
 
 These properties apply to `backups` only. Set `recordsize` before the first sync.
 
@@ -56,7 +66,17 @@ These properties apply to `backups` only. Set `recordsize` before the first sync
 | `recordsize` | `32K` | matches the ship step's `--block-size`, so one changed rsync block dirties one record |
 | `compression` | `zstd` | the point of shipping dumps uncompressed; writes are nightly and niced, so ratio beats speed |
 
-`photos` wants neither: media arrives already compressed and is written once, not delta-rewritten, so a small recordsize only costs metadata.
+## Ownership
+
+A numeric id is pinned only when something outside the host compares it. Everything else takes whatever NixOS allocates below 1000.
+
+| Range | Holds | Assigned |
+|---|---|---|
+| 1000–1999 | People | `guster` 1000 |
+| 2000–2999 | Management | |
+| 3000-3999 | Media | `entertainment` 3000 |
+| 4000-4999 | Data | `photos` 4000 |
+| 9000-9999 | Public | |
 
 ## Directories
 
