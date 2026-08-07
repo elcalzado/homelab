@@ -37,24 +37,26 @@ backups/
 
 ## Snapshots
 
+Three recursive tasks each, on `backups` at 04:00 and `photos` at 05:00:
+
+| Task | Schedule | Lifetime | Naming schema |
+|---|---|---|---|
+| daily | daily | 2 weeks | `auto-daily-%Y-%m-%d_%H-%M` |
+| weekly | Sunday | 8 weeks | `auto-weekly-%Y-%m-%d_%H-%M` |
+| monthly | on the 1st | 12 months | `auto-monthly-%Y-%m-%d_%H-%M` |
+
+The tier prefix is what keeps the three from colliding when all of them fire on a Sunday the 1st.
+
+`backups` must not be snapshotted while a job is running because writes are in-place, so a snapshot taken mid-push captures a torn file. Jobs finish by 03:00.
+
+These properties apply to `backups` only. Set `recordsize` before the first sync.
+
 | Property | Value | Reason |
 |---|---|---|
 | `recordsize` | `32K` | matches the ship step's `--block-size`, so one changed rsync block dirties one record |
 | `compression` | `zstd` | the point of shipping dumps uncompressed; writes are nightly and niced, so ratio beats speed |
 
-Set `recordsize` before the first sync.
-
-Three recursive tasks on `backups`:
-
-| Task | Schedule | Lifetime | Naming schema |
-|---|---|---|---|
-| daily | 04:00 daily | 2 weeks | `auto-daily-%Y-%m-%d_%H-%M` |
-| weekly | 04:00 Sunday | 8 weeks | `auto-weekly-%Y-%m-%d_%H-%M` |
-| monthly | 04:00 on the 1st | 12 months | `auto-monthly-%Y-%m-%d_%H-%M` |
-
-The tier prefix is what keeps the three from colliding when all of them fire on a Sunday the 1st.
-
-The 04:00 window must stay clear of every job. Writes are in-place, so a snapshot taken mid-push captures a torn file.
+`photos` wants neither: media arrives already compressed and is written once, not delta-rewritten, so a small recordsize only costs metadata.
 
 ## Directories
 
