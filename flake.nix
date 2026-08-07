@@ -3,18 +3,19 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
+    nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
     sops-nix.url = "github:Mic92/sops-nix";
     sops-nix.inputs.nixpkgs.follows = "nixpkgs";
     disko.url = "github:nix-community/disko";
     disko.inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = { nixpkgs, ... }@inputs:
+  outputs = { nixpkgs, nixpkgs-unstable, ... }@inputs:
     let
       system = "x86_64-linux";
 
-      mkSystem = modules:
-        nixpkgs.lib.nixosSystem {
+      mkSystem = channel: modules:
+        channel.lib.nixosSystem {
           inherit system modules;
           specialArgs = { inherit inputs; };
         };
@@ -24,12 +25,12 @@
       #
       #   <name>-lxc : core + Proxmox-LXC adapter
       #   <name>-vm  : core + VM/baremetal adapter + declarative disko disk layout
-      mkHost = name: {
-        "${name}-lxc" = mkSystem [
+      mkHost = channel: name: {
+        "${name}-lxc" = mkSystem channel [
           ./hosts/${name}
           ./modules/lxc.nix
         ];
-        "${name}-vm" = mkSystem [
+        "${name}-vm" = mkSystem channel [
           ./hosts/${name}
           ./modules/vm.nix
           ./modules/disk.nix
@@ -37,10 +38,11 @@
       };
     in {
       nixosConfigurations =
-        (mkHost "glance")
-        // (mkHost "qbittorrent")
-        // (mkHost "omada")
-        // (mkHost "servarr")
-        // (mkHost "jellyfin");
+        (mkHost nixpkgs "glance")
+        // (mkHost nixpkgs "qbittorrent")
+        // (mkHost nixpkgs "omada")
+        // (mkHost nixpkgs "servarr")
+        // (mkHost nixpkgs "jellyfin")
+        // (mkHost nixpkgs-unstable "immich");
     };
 }

@@ -7,6 +7,11 @@ creation_rules:
       age1kl09huvuxkrql2c2y8cwmlz9arwa5heyv8ww6ya050vm58x7t39selucl5,
       age1sv5zehntfzq7llmvp3ax80604zw0xq6ldkhyqeg0ut5729ktvddsg87wah
 
+  - path_regex: secrets/immich\.yaml$
+    age: >-
+      age1wfqvhv4dhk2tk56fpcjzzg5q4s7p3nqe9fq6jrdd75rsvlp5kvdqr9vhpl,
+      age1sv5zehntfzq7llmvp3ax80604zw0xq6ldkhyqeg0ut5729ktvddsg87wah
+
   - path_regex: secrets/jellyfin\.yaml$
     age: >-
       age1tzx8y5rmys04ylztsqxyv4f2xwmhudelxme8nfaydxx7sj9ke4hqe7l8fa,
