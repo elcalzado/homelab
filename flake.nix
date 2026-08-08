@@ -46,7 +46,9 @@
         // (mkHost nixpkgs "jellyfin" [ "amd64-vm" ])
         // (mkHost nixpkgs-unstable "immich" [ "amd64-vm" ])
         // (mkHost nixpkgs "portainer" [ "amd64-lxc" "amd64-vm" ])
-        // (mkHost nixpkgs "gatus" [ "amd64-lxc" "amd64-vm" ]);
+        // (mkHost nixpkgs "gatus" [ "amd64-lxc" "amd64-vm" ])
+        // (mkHost nixpkgs "runner" [ "amd64-lxc" ])
+        // (mkHost nixpkgs "builder" [ "amd64-vm" ]);
     in {
       nixosConfigurations = hosts;
 
