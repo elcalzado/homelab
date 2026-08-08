@@ -2,7 +2,8 @@
 # Repo checks shared by CI (.github/workflows/ci.yml) and the git pre-commit hook
 # (scripts/git-hooks/pre-commit), so the two don't drift.
 #
-# Usage: scripts/checks.sh [eval|lint|shellcheck|secrets|secrets-history|all]   (default: all)
+# Usage: scripts/checks.sh [eval|build [host]|list|lint|shellcheck|secrets|secrets-history|all]
+#        (default: all except `build`, it needs a Linux builder and is CI-only)
 #
 # Everything runs through nix, so the only prerequisite is Nix with flakes.
 set -euo pipefail
@@ -15,14 +16,32 @@ nix_() { nix --extra-experimental-features 'nix-command flakes' "$@"; }
 # Run a nixpkgs tool from the flake's pinned nixpkgs (--inputs-from), not the floating registry.
 run_tool() { nix_ run --inputs-from . "nixpkgs#$1" -- "${@:2}"; }
 
+host_names() {
+  nix_ eval --raw '.#nixosConfigurations' \
+    --apply 'c: builtins.concatStringsSep "\n" (builtins.attrNames c)'
+}
+
+# Emits the host list as JSON so CI can fan out one build job per host.
+list_hosts() {
+  nix_ eval --json '.#nixosConfigurations' --apply 'c: builtins.attrNames c'
+}
+
 eval_hosts() {
-  local names name
-  names=$(nix_ eval --raw '.#nixosConfigurations' \
-    --apply 'c: builtins.concatStringsSep "\n" (builtins.attrNames c)')
+  local name
   while IFS= read -r name; do
     [ -n "$name" ] || continue
     echo "  eval $name"
     nix_ eval --raw ".#nixosConfigurations.\"$name\".config.system.build.toplevel.drvPath" >/dev/null
+  done <<< "$(host_names)"
+}
+
+build_hosts() {
+  local name names
+  if [ "$#" -gt 0 ]; then names="$1"; else names="$(host_names)"; fi
+  while IFS= read -r name; do
+    [ -n "$name" ] || continue
+    echo "  build $name"
+    nix_ build --no-link --print-build-logs ".#checks.x86_64-linux.\"$name\""
   done <<< "$names"
 }
 
@@ -57,10 +76,12 @@ scan_secrets_history() {
 
 case "${1:-all}" in
   eval)            eval_hosts ;;
+  build)           build_hosts "${@:2}" ;;
+  list)            list_hosts ;;
   lint)            lint_nix ;;
   shellcheck)      run_shellcheck ;;
   secrets)         scan_secrets ;;
   secrets-history) scan_secrets_history ;;
   all)             eval_hosts; lint_nix; run_shellcheck; scan_secrets ;;
-  *)               echo "usage: $0 [eval|lint|shellcheck|secrets|secrets-history|all]" >&2; exit 2 ;;
+  *)               echo "usage: $0 [eval|build [host]|list|lint|shellcheck|secrets|secrets-history|all]" >&2; exit 2 ;;
 esac

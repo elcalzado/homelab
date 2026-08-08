@@ -12,13 +12,29 @@ concurrency:
 
 # Every job installs Nix and runs the same scripts/checks.sh the pre-commit hook uses.
 jobs:
-  eval:
-    name: nix eval (all hosts)
+  discover:
+    name: list hosts
     runs-on: ubuntu-latest
+    outputs:
+      hosts: ${{ steps.list.outputs.hosts }}
     steps:
       - uses: actions/checkout@v4
       - uses: DeterminateSystems/nix-installer-action@v22
-      - run: ./scripts/checks.sh eval
+      - id: list
+        run: echo "hosts=$(./scripts/checks.sh list)" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: nix build ${{ matrix.host }}
+    needs: discover
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        host: ${{ fromJSON(needs.discover.outputs.hosts) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@v22
+      - run: ./scripts/checks.sh build '${{ matrix.host }}'
 
   lint:
     name: nix lint (deadnix + statix)
