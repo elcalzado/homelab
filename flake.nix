@@ -43,6 +43,7 @@
         // (mkHost nixpkgs "omada")
         // (mkHost nixpkgs "servarr")
         // (mkHost nixpkgs "jellyfin")
-        // (mkHost nixpkgs-unstable "immich");
+        // (mkHost nixpkgs-unstable "immich")
+        // (mkHost nixpkgs "portainer");
     };
 }

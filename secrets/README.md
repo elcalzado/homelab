@@ -12,12 +12,17 @@ matching creation rules found" until you add one.
 ```bash
 age-keygen -o age-<host>.txt          # private half -> password manager
 age-keygen -y age-<host>.txt          # public half  -> a new .sops.yaml rule
-install -m 0600 age-<host>.txt /var/lib/sops-nix/key.txt   # on the host
-sops secrets/<host>.yaml              # then set sops.defaultSopsFile
+sops -e -i secrets/<host>.yaml        # then set sops.defaultSopsFile
 ```
 
-Every host needs `guster/passwordHash` (`mkpasswd -m yescrypt`), or `guster` has
-no password and no `sudo` and root login and SSH passwords are both off.
+`-e` is used to encrypt, `-i` is for in-place.
+
+Every host needs `guster/passwordHash`, or `guster` has no password and no `sudo`
+and root login and SSH passwords are both off.
+
+```bash
+nix --extra-experimental-features 'nix-command flakes' run --inputs-from . nixpkgs#mkpasswd -- -m yescrypt
+```
 
 ## Editing
 
