@@ -34,4 +34,6 @@ produces two outputs from one definition:
 | omada | [Omada Software Controller](https://www.tp-link.com/us/support/download/omada-software-controller/) + [mongodb](https://www.mongodb.com/) + [openjdk](https://openjdk.org/) + [jsvc](https://commons.apache.org/proper/commons-daemon/) | any |
 | servarr | [prowlarr](https://github.com/Prowlarr/Prowlarr) + [sonarr](https://github.com/Sonarr/Sonarr) + [radarr](https://github.com/Radarr/Radarr) + [bazarr](https://github.com/morpheus65535/bazarr) + [recyclarr](https://github.com/recyclarr/recyclarr) + [seerr](https://github.com/seerr-team/seerr) | vm |
 | jellyfin | [jellyfin](https://github.com/jellyfin/jellyfin) | vm |
-| immich | [immich](https://github.com/immich-app/immich) + [postgresql](https://www.postgresql.org/) + [vectorchord](https://github.com/tensorchord/VectorChord) + [redis](https://redis.io/) | vm |
+| immich | [immich](https://github.com/immich-app/immich) | vm |
+| portainer | [portainer](https://github.com/portainer/portainer) | any |
+| gatus | [gatus](https://github.com/TwiN/gatus) | any |
