@@ -40,7 +40,7 @@ in
 
     templates."gatus.env".content = ''
       MATRIX_ACCESS_TOKEN=${config.sops.placeholder."matrix/accessToken"}
-      MATRIX_ROOM_ID=${config.sops.placeholder."matrix/roomId"}
+      MATRIX_ROOM_ID="'${config.sops.placeholder."matrix/roomId"}'"
     '';
   };
 
