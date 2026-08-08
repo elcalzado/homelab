@@ -20,31 +20,32 @@
           specialArgs = { inherit inputs; };
         };
 
-      # For host dir ./hosts/<name>, emit TWO deployables that share the exact
-      # same platform-agnostic core, differing only by which adapter is layered on:
-      #
-      #   <name>-lxc : core + Proxmox-LXC adapter
-      #   <name>-vm  : core + VM/baremetal adapter + declarative disko disk layout
-      mkHost = channel: name: {
-        "${name}-lxc" = mkSystem channel [
-          ./hosts/${name}
-          ./modules/lxc.nix
-        ];
-        "${name}-vm" = mkSystem channel [
-          ./hosts/${name}
-          ./modules/vm.nix
-          ./modules/disk.nix
-        ];
+      targets = {
+        lxc = [ ./modules/lxc.nix ];
+        vm = [ ./modules/vm.nix ./modules/disk.nix ];
       };
+
+      mkHost = channel: name: names:
+        nixpkgs.lib.listToAttrs (map
+          (target: nixpkgs.lib.nameValuePair "${name}-${target}"
+            (mkSystem channel ([ ./hosts/${name} ] ++ targets.${target})))
+          names);
+      hosts =
+        (mkHost nixpkgs "glance" [ "lxc" "vm" ])
+        // (mkHost nixpkgs "qbittorrent" [ "vm" ])
+        // (mkHost nixpkgs "omada" [ "lxc" "vm" ])
+        // (mkHost nixpkgs "servarr" [ "vm" ])
+        // (mkHost nixpkgs "jellyfin" [ "vm" ])
+        // (mkHost nixpkgs-unstable "immich" [ "vm" ])
+        // (mkHost nixpkgs "portainer" [ "lxc" "vm" ])
+        // (mkHost nixpkgs "gatus" [ "lxc" "vm" ]);
     in {
-      nixosConfigurations =
-        (mkHost nixpkgs "glance")
-        // (mkHost nixpkgs "qbittorrent")
-        // (mkHost nixpkgs "omada")
-        // (mkHost nixpkgs "servarr")
-        // (mkHost nixpkgs "jellyfin")
-        // (mkHost nixpkgs-unstable "immich")
-        // (mkHost nixpkgs "portainer")
-        // (mkHost nixpkgs "gatus");
+      nixosConfigurations = hosts;
+
+      # `nix flake check` builds every host, so a config that evaluates but does
+      # not build fails here rather than on the machine.
+      checks.${system} = nixpkgs.lib.mapAttrs'
+        (name: cfg: nixpkgs.lib.nameValuePair name cfg.config.system.build.toplevel)
+        hosts;
     };
 }
