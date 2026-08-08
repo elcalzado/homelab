@@ -4,3 +4,4 @@ restrict,command="rrsync -wo /mnt/blueberry/backups/qbittorrent" ssh-ed25519 AAA
 restrict,command="rrsync -wo /mnt/blueberry/backups/servarr" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFahrKeRu5Jts70hwUDykNf8e+KXB0deXrwm/e3NM1LH backup@servarr
 restrict,command="rrsync -wo /mnt/blueberry/backups/immich" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICdjvQCD4t8MxJDLFJFOWz3QIbHm2AWkuw4ezT2mzV2s backup@immich
 restrict,command="rrsync -wo /mnt/blueberry/backups/portainer" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPYTxUjOMQ7ekeJo7lnVhSfQrx9d1zu9Hb6f0JJjS6b5 backup@portainer
+restrict,command="rrsync -wo /mnt/blueberry/backups/gatus" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIALsgfgwGzr0ncWkH78BiLa7kXeS40c/PdbO3koWga/y backup@gatus

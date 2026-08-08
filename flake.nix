@@ -44,6 +44,7 @@
         // (mkHost nixpkgs "servarr")
         // (mkHost nixpkgs "jellyfin")
         // (mkHost nixpkgs-unstable "immich")
-        // (mkHost nixpkgs "portainer");
+        // (mkHost nixpkgs "portainer")
+        // (mkHost nixpkgs "gatus");
     };
 }

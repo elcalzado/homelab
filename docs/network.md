@@ -10,6 +10,8 @@
 | jellyfin    | `10.0.30.7`   | VM       |
 | servarr     | `10.0.30.8`   | VM       |
 | immich      | `10.0.30.9`   | VM       |
+| portainer   | `10.0.30.10`  | LXC      |
+| gatus       | `10.0.30.11`  | LXC      |
 
 ## qbittorrent VPN / kill-switch
 

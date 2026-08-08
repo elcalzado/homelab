@@ -36,3 +36,8 @@ creation_rules:
     age: >-
       age1v0u0muj6krza9dz83wdfgzw3x89ty4kak2hw6r28d9q02q3h4fmssdq2aa,
       age1sv5zehntfzq7llmvp3ax80604zw0xq6ldkhyqeg0ut5729ktvddsg87wah
+
+  - path_regex: secrets/gatus\.yaml$
+    age: >-
+      age1wjsv39vghpjzhd556rtqkk4pqul0pjzkj5nj3nlxw5470lvkr43sp96p2j,
+      age1sv5zehntfzq7llmvp3ax80604zw0xq6ldkhyqeg0ut5729ktvddsg87wah
