@@ -9,6 +9,7 @@
 | glance      | `10.0.30.6`   | LXC      |
 | jellyfin    | `10.0.30.7`   | VM       |
 | servarr     | `10.0.30.8`   | VM       |
+| immich      | `10.0.30.9`   | VM       |
 
 ## qbittorrent VPN / kill-switch
 
