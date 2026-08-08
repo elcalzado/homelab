@@ -9,8 +9,8 @@ nixos-rebuild switch --flake .#<output>
 Host files (`hosts/`) are platform-agnostic and describe WHAT a machine runs.
 The platform (LXC vs VM/baremetal) is layered on in `flake.nix`, so each host
 produces two outputs from one definition:
-- `<host>-lxc` — Proxmox LXC adapter
-- `<host>-vm`  — VM/baremetal adapter + disko
+- `<host>-amd64-lxc` — Proxmox LXC adapter
+- `<host>-amd64-vm`  — VM/baremetal adapter + disko
 
 ## Layout
 - `hosts/`    per-machine config (services + identity, no platform details)

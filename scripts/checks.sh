@@ -22,8 +22,14 @@ host_names() {
 }
 
 # Emits the host list as JSON so CI can fan out one build job per host.
+system_of() {
+  nix_ eval --raw ".#nixosConfigurations.\"$1\".config.nixpkgs.hostPlatform.system"
+}
+
 list_hosts() {
-  nix_ eval --json '.#nixosConfigurations' --apply 'c: builtins.attrNames c'
+  local want="${1:-x86_64-linux}"
+  nix_ eval --json '.#nixosConfigurations' --apply \
+    "c: builtins.filter (n: c.\${n}.config.nixpkgs.hostPlatform.system == \"$want\") (builtins.attrNames c)"
 }
 
 eval_hosts() {
@@ -36,12 +42,13 @@ eval_hosts() {
 }
 
 build_hosts() {
-  local name names
+  local name names system
   if [ "$#" -gt 0 ]; then names="$1"; else names="$(host_names)"; fi
   while IFS= read -r name; do
     [ -n "$name" ] || continue
-    echo "  build $name"
-    nix_ build --no-link --print-build-logs ".#checks.x86_64-linux.\"$name\""
+    system=$(system_of "$name")
+    echo "  build $name ($system)"
+    nix_ build --no-link --print-build-logs ".#checks.$system.\"$name\""
   done <<< "$names"
 }
 
@@ -77,7 +84,7 @@ scan_secrets_history() {
 case "${1:-all}" in
   eval)            eval_hosts ;;
   build)           build_hosts "${@:2}" ;;
-  list)            list_hosts ;;
+  list)            list_hosts "${@:2}" ;;
   lint)            lint_nix ;;
   shellcheck)      run_shellcheck ;;
   secrets)         scan_secrets ;;

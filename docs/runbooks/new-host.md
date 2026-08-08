@@ -32,7 +32,7 @@ Identity + which modules it pulls in. No platform details.
 ```nix
 nixosConfigurations =
   (mkHost "glance")
-  // (mkHost "<name>");     # auto-creates outputs <name>-lxc and <name>-vm
+  // (mkHost nixpkgs "<name>" [ "amd64-lxc" "amd64-vm" ]);   # one output per target
 ```
 
 **Commit + push:**
@@ -91,7 +91,7 @@ Back in the container:
 ```bash
 pkill -x sshd
 NIX_CONFIG="experimental-features = nix-command flakes" \
-nixos-rebuild switch --flake /root/homelab#<name>-lxc
+nixos-rebuild switch --flake /root/homelab#<name>-amd64-lxc
 ```
 
 Jump to Step 3.
@@ -131,7 +131,7 @@ The following command partitions the disk, installs the whole config, and reboot
 ```bash
 nix run --extra-experimental-features "nix-command flakes"  \
   github:nix-community/nixos-anywhere --                    \
-  --flake .#<name>-vm                                       \
+  --flake .#<name>-amd64-vm                                 \
   --extra-files /tmp/extra                                  \
   root@10.0.30.<x>
 ```
@@ -160,7 +160,7 @@ cd ~ && git clone https://github.com/elcalzado/homelab.git
 
 Then enter the target and rebuild:
 ```bash
-ssh -t guster@<host-ip> 'cd ~/homelab && sudo nixos-rebuild switch --flake .#<name>-vm'   # or .#<name>-lxc
+ssh -t guster@<host-ip> 'cd ~/homelab && sudo nixos-rebuild switch --flake .#<name>-amd64-vm'   # or .#<name>-amd64-lxc
 ```
 
 ---

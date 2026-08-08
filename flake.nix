@@ -12,40 +12,48 @@
 
   outputs = { nixpkgs, nixpkgs-unstable, ... }@inputs:
     let
-      system = "x86_64-linux";
+      inherit (nixpkgs) lib;
 
-      mkSystem = channel: modules:
+      mkSystem = channel: system: modules:
         channel.lib.nixosSystem {
-          inherit system modules;
+          modules = modules ++ [ { nixpkgs.hostPlatform = system; } ];
           specialArgs = { inherit inputs; };
         };
 
-      targets = {
+      platforms = {
         lxc = [ ./modules/lxc.nix ];
         vm = [ ./modules/vm.nix ./modules/disk.nix ];
       };
 
+      targets = {
+        amd64-lxc = { system = "x86_64-linux"; modules = platforms.lxc; };
+        amd64-vm = { system = "x86_64-linux"; modules = platforms.vm; };
+        arm64-lxc = { system = "aarch64-linux"; modules = platforms.lxc; };
+        arm64-vm = { system = "aarch64-linux"; modules = platforms.vm; };
+      };
+
       mkHost = channel: name: names:
-        nixpkgs.lib.listToAttrs (map
-          (target: nixpkgs.lib.nameValuePair "${name}-${target}"
-            (mkSystem channel ([ ./hosts/${name} ] ++ targets.${target})))
+        lib.listToAttrs (map
+          (target: lib.nameValuePair "${name}-${target}"
+            (mkSystem channel targets.${target}.system ([ ./hosts/${name} ] ++ targets.${target}.modules)))
           names);
+
       hosts =
-        (mkHost nixpkgs "glance" [ "lxc" "vm" ])
-        // (mkHost nixpkgs "qbittorrent" [ "vm" ])
-        // (mkHost nixpkgs "omada" [ "lxc" "vm" ])
-        // (mkHost nixpkgs "servarr" [ "vm" ])
-        // (mkHost nixpkgs "jellyfin" [ "vm" ])
-        // (mkHost nixpkgs-unstable "immich" [ "vm" ])
-        // (mkHost nixpkgs "portainer" [ "lxc" "vm" ])
-        // (mkHost nixpkgs "gatus" [ "lxc" "vm" ]);
+        (mkHost nixpkgs "glance" [ "amd64-lxc" "amd64-vm" ])
+        // (mkHost nixpkgs "qbittorrent" [ "amd64-vm" ])
+        // (mkHost nixpkgs "omada" [ "amd64-lxc" "amd64-vm" ])
+        // (mkHost nixpkgs "servarr" [ "amd64-vm" ])
+        // (mkHost nixpkgs "jellyfin" [ "amd64-vm" ])
+        // (mkHost nixpkgs-unstable "immich" [ "amd64-vm" ])
+        // (mkHost nixpkgs "portainer" [ "amd64-lxc" "amd64-vm" ])
+        // (mkHost nixpkgs "gatus" [ "amd64-lxc" "amd64-vm" ]);
     in {
       nixosConfigurations = hosts;
 
       # `nix flake check` builds every host, so a config that evaluates but does
       # not build fails here rather than on the machine.
-      checks.${system} = nixpkgs.lib.mapAttrs'
-        (name: cfg: nixpkgs.lib.nameValuePair name cfg.config.system.build.toplevel)
-        hosts;
+      checks = lib.mapAttrs
+        (_: names: lib.genAttrs names (name: hosts.${name}.config.system.build.toplevel))
+        (lib.groupBy (name: hosts.${name}.config.nixpkgs.hostPlatform.system) (lib.attrNames hosts));
     };
 }

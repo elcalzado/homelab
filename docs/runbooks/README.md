@@ -16,5 +16,5 @@ checklist that can be followed without re-deriving anything.
 - **Workstation** = home of the repo. All editing + `git` happens here.
 - **New machine** = only ever *pulls* the repo and runs `nixos-rebuild` on
   itself.
-- **Outputs are named `<host>-lxc` and `<host>-vm`.** The suffix is the
+- **Outputs are named `<host>-<arch>-<platform>`,** e.g. `gatus-amd64-lxc`. The suffix is the
   platform selector; the host file underneath is platform-agnostic.

@@ -12,6 +12,14 @@ concurrency:
 
 # Every job installs Nix and runs the same scripts/checks.sh the pre-commit hook uses.
 jobs:
+  eval:
+    name: nix eval (every host, all architectures)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: DeterminateSystems/nix-installer-action@v22
+      - run: ./scripts/checks.sh eval
+
   discover:
     name: list hosts
     runs-on: ubuntu-latest
@@ -21,7 +29,7 @@ jobs:
       - uses: actions/checkout@v5
       - uses: DeterminateSystems/nix-installer-action@v22
       - id: list
-        run: echo "hosts=$(./scripts/checks.sh list)" >> "$GITHUB_OUTPUT"
+        run: echo "hosts=$(./scripts/checks.sh list x86_64-linux)" >> "$GITHUB_OUTPUT"
 
   build:
     name: nix build ${{ matrix.host }}
