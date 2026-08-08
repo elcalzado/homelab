@@ -55,11 +55,19 @@ The `chown` is what lets `scp` fetch it without `sudo`.
 
 ```bash
 mkdir -p /tmp/verify && tar -C /tmp/verify -xf /tmp/<service>.tar && ls -la /tmp/verify
-sqlite3 /tmp/verify/<database> 'PRAGMA quick_check;'
 ```
 
-`ok` plus a plausible file listing means the dump is sound. Stop here if all you
-wanted was to confirm the pipeline works — nothing so far has touched the host.
+Then, by what the dataset holds:
+
+| Kind | Check | Sound when |
+|---|---|---|
+| SQLite `.db` | `sqlite3 /tmp/verify/<db> "SELECT count(*) FROM sqlite_schema WHERE type='table'"` | a plausible table count, not `0` |
+| SQLite `.db` | `sqlite3 /tmp/verify/<db> 'PRAGMA quick_check;'` | prints `ok` |
+| Postgres `.sql` | `tail -c 4096 /tmp/verify/<db>.sql \| grep 'dump complete'` | matches |
+| `mongodump/` | `find /tmp/verify/mongodump -mindepth 2 -name '*.bson' -not -path '*/admin/*'` | lists collections |
+
+A plausible file listing plus that check means the dump is sound. Stop here if all
+you wanted was to confirm the pipeline works.
 
 ---
 
@@ -164,10 +172,56 @@ file-level database restore.
 > A `.cfg` only restores into the **same controller version** it came from. After
 > a version bump, older files are for reference, not recovery.
 
-`mongodump/` is the insurance against that: a version-independent BSON dump,
-readable with `mongorestore` into a scratch mongod. It is not a supported way to
-restore the controller — reach for it to read data a stale `.cfg` can no longer
-restore, not to put a database back under a running Omada.
+`mongodump/` is the insurance against that.
+
+---
+
+## Immich is different
+
+Pull and verify it per Steps 1-3, then land it and stop the service:
+
+```bash
+scp /tmp/immich.tar guster@immich.home.arpa:/tmp/
+
+ssh -t guster@immich.home.arpa '
+  mkdir -p /tmp/restore && tar -C /tmp/restore -xf /tmp/immich.tar &&
+  sudo systemctl stop immich-server immich-machine-learning'
+```
+
+```bash
+ssh -t guster@immich.home.arpa \
+  'sudo -u postgres pg_dump --clean --if-exists --dbname=immich > /tmp/immich.pre-restore.sql &&
+   tail -c 4096 /tmp/immich.pre-restore.sql | grep -q "dump complete" &&
+   echo "pre-restore dump is sound"'
+```
+
+Then drop and recreate the database rather than replaying over it:
+
+```bash
+ssh -t guster@immich.home.arpa '
+  sudo -u postgres psql -v ON_ERROR_STOP=1 -c "DROP DATABASE immich" &&
+  sudo -u postgres psql -v ON_ERROR_STOP=1 -c "CREATE DATABASE immich OWNER immich"'
+```
+
+Now replay it as `postgres`, not as `immich`, in a single transaction:
+
+```bash
+ssh -t guster@immich.home.arpa \
+  'sudo -u postgres psql -d immich -v ON_ERROR_STOP=1 --single-transaction \
+     -f /tmp/restore/immich.sql'
+```
+
+Then start it and confirm before trusting it:
+
+```bash
+ssh -t guster@immich.home.arpa 'sudo systemctl start immich-server immich-machine-learning'
+```
+
+Only once you have logged in and seen your library, discard the safety dump:
+
+```bash
+ssh -t guster@immich.home.arpa 'sudo rm -f /tmp/immich.pre-restore.sql'
+```
 
 ---
 

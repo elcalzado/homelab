@@ -4,7 +4,6 @@ let
   version = "6.2.10.17";
 
   omadaUser = "omada";
-  omadaUid  = 2000;
 
   omadaHome = "/opt/tplink/EAPController";
   stateDir  = "/var/lib/omada";
@@ -66,31 +65,22 @@ let
   propertiesFile = "${omadaHome}/properties/omada.properties";
   autoBackupDir  = "${stateDir}/data/autobackup";
   keystoreDir    = "${stateDir}/data/keystore";
-  mongoDumpDir   = "${stateDir}/mongodump";
 
-  mongoDump = pkgs.writeShellApplication {
-    name = "omada-mongodump";
-    runtimeInputs = with pkgs; [ coreutils gnused mongodb-tools ];
-    text = ''
-      PROPERTIES=${lib.escapeShellArg propertiesFile}
-      DUMP_DIR=${lib.escapeShellArg mongoDumpDir}
-      ${builtins.readFile ../../scripts/omada/mongodump.sh}
-    '';
-  };
+  mongodPort = 27217;
 in
 {
   homelab.backup.jobs.omada = {
     at = "01:20";
-    trees = [ autoBackupDir keystoreDir mongoDumpDir ];
+    databases = [ { engine = "mongodb"; name = "mongodump"; port = mongodPort; } ];
+    trees = [ autoBackupDir keystoreDir ];
     files = [ propertiesFile ];
     maxAge = autoBackupStaleAfterHours;
     maxAgePaths = [ autoBackupDir ];
   };
 
-  users.groups.${omadaUser}.gid = omadaUid;
+  users.groups.${omadaUser} = { };
   users.users.${omadaUser} = {
     isSystemUser = true;
-    uid   = omadaUid;
     group = omadaUser;
     home  = stateDir;
   };
@@ -107,7 +97,6 @@ in
       "L+ ${omadaHome}/logs                        - - - - ${stateDir}/logs"
       "L+ ${omadaHome}/work                        - - - - ${stateDir}/work"
       "d  ${stateDir}                              0750 ${omadaUser} ${omadaUser} -"
-      "d  ${mongoDumpDir}                          0750 ${omadaUser} ${omadaUser} -"
       "d  ${stateDir}/data                         0750 ${omadaUser} ${omadaUser} -"
       "d  ${stateDir}/logs                         0750 ${omadaUser} ${omadaUser} -"
       "d  ${stateDir}/work                         0750 ${omadaUser} ${omadaUser} -"
@@ -117,29 +106,6 @@ in
       "C  ${omadaHome}/properties/omada.properties  0640 ${omadaUser} ${omadaUser} - ${omada-controller}/properties/omada.properties"
       "L+ ${omadaHome}/properties/log4j2.properties - - - - ${omada-controller}/properties/log4j2.properties"
     ] ++ map (d: "d ${stateDir}/data/${d} 0750 ${omadaUser} ${omadaUser} -") dataDirs;
-
-    services.omada-mongodump = {
-      description = "Dump the Omada MongoDB for backup";
-      before = [ "backup-omada.service" ];
-      wantedBy = [ "backup-omada.service" ];
-      onFailure = [ "backup-failed@omada-mongodump.service" ];
-
-      serviceConfig = {
-        Type = "oneshot";
-        User = omadaUser;
-        Group = omadaUser;
-        ExecStart = lib.getExe mongoDump;
-        UMask = "0077";
-        ReadWritePaths = [ stateDir ];
-        ProtectSystem = "strict";
-        ProtectHome = true;
-        PrivateTmp = true;
-        NoNewPrivileges = true;
-        TimeoutStartSec = "30m";
-        Nice = 10;
-        IOSchedulingClass = "idle";
-      };
-    };
 
     services.omada = {
       description = "TP-Link Omada SDN Controller";

@@ -13,6 +13,11 @@ in
     inherit mediaLocation;
   };
 
+  homelab.backup.jobs.immich = {
+    at = "00:20";
+    databases = [ { engine = "postgres"; name = "immich"; } ];
+  };
+
   systemd = {
     tmpfiles.settings.immich.${mediaLocation}.e.mode = lib.mkForce "0770";
 

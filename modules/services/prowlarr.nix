@@ -12,7 +12,7 @@ in
 
   homelab.backup.jobs.prowlarr = {
     at = "02:20";
-    databases = [ "${dynamicUserStateDir}/prowlarr.db" ];
+    databases = [ { engine = "sqlite"; path = "${dynamicUserStateDir}/prowlarr.db"; } ];
     files = [ "${dynamicUserStateDir}/config.xml" ];
   };
 }

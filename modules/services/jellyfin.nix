@@ -13,8 +13,9 @@ in
 
   homelab.backup.jobs.jellyfin = {
     at = "01:40";
-    databases = [ "${dataDir}/data/jellyfin.db" ];
+    databases = [ { engine = "sqlite"; path = "${dataDir}/data/jellyfin.db"; } ];
     trees = [ configDir "${dataDir}/plugins" ];
+    mayBeEmpty = [ "${dataDir}/plugins" ];
   };
 
   systemd.services.jellyfin.unitConfig.RequiresMountsFor = [ "/mnt/entertainment" ];

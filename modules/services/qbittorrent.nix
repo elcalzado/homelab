@@ -96,7 +96,7 @@ in
   };
 
   homelab.backup.jobs.qbittorrent = {
-    at = "03:00";
+    at = "02:50";
     trees = [ resumeDir configDir ];
     excludes = [ "qBittorrent.conf" "lockfile" ];
   };

@@ -2,3 +2,4 @@ restrict,command="rrsync -wo /mnt/blueberry/backups/jellyfin" ssh-ed25519 AAAAC3
 restrict,command="rrsync -wo /mnt/blueberry/backups/omada" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDgSY3Ff0em4qIqDIgNvx9syvQpD9veUQJeC8B40cUb7 backup@omada
 restrict,command="rrsync -wo /mnt/blueberry/backups/qbittorrent" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJ/TwhGCznEb0Kh8IRJ4wHq+k4lwlcQu3N2qU+/5wVRI backup@qbittorrent
 restrict,command="rrsync -wo /mnt/blueberry/backups/servarr" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFahrKeRu5Jts70hwUDykNf8e+KXB0deXrwm/e3NM1LH backup@servarr
+restrict,command="rrsync -wo /mnt/blueberry/backups/immich" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICdjvQCD4t8MxJDLFJFOWz3QIbHm2AWkuw4ezT2mzV2s backup@immich

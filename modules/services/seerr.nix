@@ -12,7 +12,7 @@ in
 
   homelab.backup.jobs.seerr = {
     at = "02:40";
-    databases = [ "${dynamicUserStateDir}/db/db.sqlite3" ];
+    databases = [ { engine = "sqlite"; path = "${dynamicUserStateDir}/db/db.sqlite3"; } ];
     files = [ "${dynamicUserStateDir}/settings.json" ];
   };
 }

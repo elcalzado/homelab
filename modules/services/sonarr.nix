@@ -13,7 +13,7 @@ in
 
   homelab.backup.jobs.sonarr = {
     at = "02:00";
-    databases = [ "${dataDir}/sonarr.db" ];
+    databases = [ { engine = "sqlite"; path = "${dataDir}/sonarr.db"; } ];
     files = [ "${dataDir}/config.xml" ];
   };
 
