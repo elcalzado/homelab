@@ -22,12 +22,11 @@ let
     }
     // lib.optionalAttrs insecure { client.insecure = true; };
 
-  reachable =
-    { name, host }:
+  listening =
+    { name, group, host, port }:
     {
-      inherit name interval alerts;
-      group = "infrastructure";
-      url = "icmp://${host}";
+      inherit name group interval alerts;
+      url = "tcp://${host}:${toString port}";
       conditions = [ "[CONNECTED] == true" ];
     };
 in
@@ -81,7 +80,8 @@ in
         (web { name = "glance"; group = "management"; url = "http://glance.home.arpa:8080"; })
         (web { name = "portainer"; group = "management"; url = "https://portainer.home.arpa:9443"; insecure = true; })
 
-        (reachable { name = "truenas"; host = "truenas.home.arpa"; })
+        (web { name = "truenas"; group = "infrastructure"; url = "https://truenas.home.arpa"; insecure = true; })
+        (listening { name = "backups"; group = "infrastructure"; host = "truenas.home.arpa"; port = 22; })
       ];
     };
   };
