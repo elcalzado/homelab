@@ -31,7 +31,7 @@ Identity + which modules it pulls in. No platform details.
 
 ```nix
 nixosConfigurations =
-  (mkHost "glance")
+  (mkHost nixpkgs "glance" [ "amd64-lxc" "amd64-vm" ] )
   // (mkHost nixpkgs "<name>" [ "amd64-lxc" "amd64-vm" ]);   # one output per target
 ```
 
@@ -88,12 +88,6 @@ nix run --extra-experimental-features 'nix-command flakes' \
   nixpkgs#nixos-rebuild-ng -- switch \
   --flake .#<name>-amd64-lxc \
   --target-host root@<host-ip>
-```
-
-Back in the container:
-
-```bash
-pkill -x sshd
 ```
 
 Jump to Step 3.

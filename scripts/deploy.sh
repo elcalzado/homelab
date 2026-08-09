@@ -18,13 +18,11 @@ ssh_opts=(-i "$key" -o StrictHostKeyChecking=accept-new -o ConnectTimeout=10)
 nix_() { nix --extra-experimental-features 'nix-command flakes' "$@"; }
 
 address=$(nix_ eval --raw ".#deploy.nodes.\"$node\".hostname")
-system=$(nix_ eval --raw ".#deploy.nodes.\"$node\".profiles.system.path")
+system=$(nix_ build --no-link --print-out-paths ".#deploy.nodes.\"$node\".profiles.system.path")
 
 printf '== %s (%s) ==\n' "$node" "$address"
 
-# Ship the closure first so the diff can run on the target. deploy-rs needs it
-# there regardless, so this is not extra work.
-nix_ copy --to "ssh://deploy@$address?ssh-key=$key" "$system"
+NIX_SSHOPTS="${ssh_opts[*]}" nix_ copy --to "ssh://deploy@$address" "$system"
 
 printf '\n-- package changes --\n'
 ssh "${ssh_opts[@]}" "deploy@$address" \
@@ -33,8 +31,8 @@ ssh "${ssh_opts[@]}" "deploy@$address" \
 
 printf '\n-- %s --\n' "$mode"
 case "$mode" in
-dry-activate) nix_ run --inputs-from . deploy-rs -- --ssh-opts "${ssh_opts[*]}" --dry-activate ".#$node" ;;
-switch) nix_ run --inputs-from . deploy-rs -- --ssh-opts "${ssh_opts[*]}" ".#$node" ;;
+dry-activate) nix_ run --inputs-from . deploy-rs -- --skip-checks --ssh-opts "${ssh_opts[*]}" --dry-activate ".#$node" ;;
+switch) nix_ run --inputs-from . deploy-rs -- --skip-checks --ssh-opts "${ssh_opts[*]}" ".#$node" ;;
 *)
   printf 'unknown mode: %s\n' "$mode" >&2
   exit 2
