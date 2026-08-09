@@ -31,8 +31,8 @@ ssh "${ssh_opts[@]}" "deploy@$address" \
 
 printf '\n-- %s --\n' "$mode"
 case "$mode" in
-dry-activate) nix_ run --inputs-from . deploy-rs -- --skip-checks --ssh-opts "${ssh_opts[*]}" --dry-activate ".#$node" ;;
-switch) nix_ run --inputs-from . deploy-rs -- --skip-checks --ssh-opts "${ssh_opts[*]}" ".#$node" ;;
+dry-activate) deploy --skip-checks --ssh-opts "${ssh_opts[*]}" --dry-activate ".#$node" ;;
+switch) deploy --skip-checks --ssh-opts "${ssh_opts[*]}" ".#$node" ;;
 *)
   printf 'unknown mode: %s\n' "$mode" >&2
   exit 2
