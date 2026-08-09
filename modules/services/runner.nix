@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }:
+{ config, inputs, lib, pkgs, ... }:
 
 let
   cfg = config.homelab.runner;
@@ -63,6 +63,10 @@ in
     };
 
     users.groups.github-runner = { };
+
+    environment.systemPackages = [
+      inputs.deploy-rs.packages.${pkgs.stdenv.hostPlatform.system}.default
+    ];
 
     programs.ssh.knownHosts.${cfg.builder.host}.publicKey = cfg.builder.hostKey;
 
