@@ -40,9 +40,20 @@ jobs:
       matrix:
         host: ${{ fromJSON(needs.discover.outputs.hosts) }}
     steps:
+      - uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: true
+          android: true
+          dotnet: true
+          haskell: true
+          docker-images: true
+          large-packages: false
+          swap-storage: false
       - uses: actions/checkout@v5
       - uses: DeterminateSystems/nix-installer-action@v22
       - run: ./scripts/checks.sh build '${{ matrix.host }}'
+      - if: failure()
+        run: df -h /
 
   lint:
     name: nix lint (deadnix + statix)
