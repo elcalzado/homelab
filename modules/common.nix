@@ -9,7 +9,10 @@ in
     ./backup.nix
   ];
 
-  nix.settings.experimental-features = [ "nix-command" "flakes" ];
+  nix.settings = {
+    experimental-features = [ "nix-command" "flakes" ];
+    trusted-users = [ "guster" "deploy" ];
+  };
 
   services.openssh = {
     enable = true;
