@@ -16,11 +16,14 @@ on:
           - omada
           - portainer
           - qbittorrent
-          - runner
           - servarr
 
 permissions:
   contents: read
+
+concurrency:
+  group: host-${{ inputs.host }}
+  cancel-in-progress: false
 
 jobs:
   rollback:

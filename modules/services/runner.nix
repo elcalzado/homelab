@@ -44,10 +44,16 @@ in
       inherit (cfg) url;
       tokenFile = config.sops.secrets."github/runnerToken".path;
       ephemeral = true;
+      replace = true;
       user = "github-runner";
       group = "github-runner";
       extraLabels = [ "homelab" ];
       extraPackages = with pkgs; [ git openssh nix ];
+
+      serviceOverrides = {
+        Restart = lib.mkForce "always";
+        RestartSec = 30;
+      };
     };
 
     users.users.github-runner = {
@@ -62,6 +68,12 @@ in
 
     nix = {
       distributedBuilds = true;
+
+      gc = {
+        automatic = true;
+        dates = "03:45";
+        options = "--delete-older-than 14d";
+      };
 
       settings = {
         max-jobs = 0;

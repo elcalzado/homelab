@@ -16,7 +16,6 @@ on:
           - omada
           - portainer
           - qbittorrent
-          - runner
           - servarr
       mode:
         description: Preview only, or actually switch
@@ -31,7 +30,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: deploy-${{ inputs.host }}
+  group: host-${{ inputs.host }}
   cancel-in-progress: false
 
 jobs:

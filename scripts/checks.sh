@@ -26,10 +26,10 @@ system_of() {
   nix_ eval --raw ".#nixosConfigurations.\"$1\".config.nixpkgs.hostPlatform.system"
 }
 
+# shellcheck disable=SC2016
 list_hosts() {
-  local want="${1:-x86_64-linux}"
   nix_ eval --json '.#nixosConfigurations' --apply \
-    "c: builtins.filter (n: c.\${n}.config.nixpkgs.hostPlatform.system == \"$want\") (builtins.attrNames c)"
+    'c: map (n: { host = n; system = c.${n}.config.nixpkgs.hostPlatform.system; }) (builtins.attrNames c)'
 }
 
 eval_hosts() {
@@ -84,7 +84,7 @@ scan_secrets_history() {
 case "${1:-all}" in
   eval)            eval_hosts ;;
   build)           build_hosts "${@:2}" ;;
-  list)            list_hosts "${@:2}" ;;
+  list)            list_hosts ;;
   lint)            lint_nix ;;
   shellcheck)      run_shellcheck ;;
   secrets)         scan_secrets ;;
