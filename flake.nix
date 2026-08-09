@@ -8,9 +8,11 @@
     sops-nix.inputs.nixpkgs.follows = "nixpkgs";
     disko.url = "github:nix-community/disko";
     disko.inputs.nixpkgs.follows = "nixpkgs";
+    deploy-rs.url = "github:serokell/deploy-rs";
+    deploy-rs.inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = { nixpkgs, nixpkgs-unstable, ... }@inputs:
+  outputs = { nixpkgs, nixpkgs-unstable, deploy-rs, ... }@inputs:
     let
       inherit (nixpkgs) lib;
 
@@ -49,13 +51,46 @@
         // (mkHost nixpkgs "gatus" [ "amd64-lxc" "amd64-vm" ])
         // (mkHost nixpkgs "runner" [ "amd64-lxc" ])
         // (mkHost nixpkgs "builder" [ "amd64-vm" ]);
+
+      mkNode = output:
+        let
+          cfg = hosts.${output};
+          system = cfg.config.nixpkgs.hostPlatform.system;
+        in
+        {
+          hostname = (lib.head cfg.config.networking.interfaces.eth0.ipv4.addresses).address;
+          sshUser = "deploy";
+          autoRollback = true;
+          magicRollback = true;
+          profiles.system = {
+            user = "root";
+            path = deploy-rs.lib.${system}.activate.nixos cfg;
+          };
+        };
+
+      nodes = {
+        builder = mkNode "builder-amd64-vm";
+        gatus = mkNode "gatus-amd64-lxc";
+        glance = mkNode "glance-amd64-lxc";
+        immich = mkNode "immich-amd64-vm";
+        jellyfin = mkNode "jellyfin-amd64-vm";
+        omada = mkNode "omada-amd64-lxc";
+        portainer = mkNode "portainer-amd64-lxc";
+        qbittorrent = mkNode "qbittorrent-amd64-vm";
+        runner = mkNode "runner-amd64-lxc";
+        servarr = mkNode "servarr-amd64-vm";
+      };
     in {
       nixosConfigurations = hosts;
+
+      deploy = { inherit nodes; };
 
       # `nix flake check` builds every host, so a config that evaluates but does
       # not build fails here rather than on the machine.
       checks = lib.mapAttrs
-        (_: names: lib.genAttrs names (name: hosts.${name}.config.system.build.toplevel))
+        (system: names:
+          lib.genAttrs names (name: hosts.${name}.config.system.build.toplevel)
+          // deploy-rs.lib.${system}.deployChecks { inherit nodes; })
         (lib.groupBy (name: hosts.${name}.config.nixpkgs.hostPlatform.system) (lib.attrNames hosts));
     };
 }

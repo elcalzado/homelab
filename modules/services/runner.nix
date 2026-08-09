@@ -33,6 +33,10 @@ in
     sops.secrets = {
       "github/runnerToken" = { };
       "builder/sshKey" = { };
+      "deploy/sshKey" = {
+        owner = "github-runner";
+        mode = "0400";
+      };
     };
 
     services.github-runners.homelab = {
