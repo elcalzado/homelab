@@ -1,85 +1,71 @@
 # Runbook: Update / upgrade (`flake.lock`)
 
-`flake.lock` pins every input to an exact commit. **Nothing moves until you
-update it**.
-
-All of this happens on your **workstation**, in `homelab` repo root. Each update is a
-normal git commit: reviewable, and revertible if it breaks something.
+`flake.lock` pins every input to an exact commit. Updating the lock changes no
+running machine — deploying does.
 
 ---
 
-## When to update
-
-- **Security patches / newer package versions**
-- **A specific newer version you need** (upstream bugfix, new feature).
-- **Bumping to a new NixOS release**
-- **After adding or changing an input** in `flake.nix`.
-
----
-
-## Update everything
+## 1. Bump the lock
 
 ```bash
 cd ~/homelab
-nix flake update                 # re-pin ALL inputs to their latest
-git add flake.lock
-git commit -m "flake.lock: update inputs"
-git push
+git switch -c update-inputs
+
+nix flake update                 # all inputs
+nix flake update nixpkgs         # or one only
+
+git commit -am "flake.lock: update inputs"
+git push -u origin update-inputs
 ```
 
-## Update one input only (usually preferred)
-
-```bash
-nix flake update nixpkgs         # re-pin ONLY nixpkgs; all other inputs stay frozen
-```
-
-Commit + push the same way.
-
----
+Open a PR. CI builds every host; merge only when green.
 
 ## Bump to a new NixOS release
 
 1. Edit `flake.nix`: `nixpkgs.url = "github:NixOS/nixpkgs/nixos-XX.YY";`
 2. `nix flake update nixpkgs`
-3. Review, then commit **`flake.nix` and `flake.lock` together**, and push.
+3. Commit `flake.nix` and `flake.lock` together.
 
-> Do **not** change `system.stateVersion` when bumping releases. It records the
-> release a host was *first installed* with and controls stateful-data defaults;
-> leave it alone.
+> Never change `system.stateVersion` when bumping releases.
 
 ---
 
-## Apply an update to your machines
+## 2. Deploy
 
-Updating the lock doesn't touch any running machine. Roll out the changes
-per host, over SSH, at whatever pace works:
+Actions → **deploy** → pick host → `dry-activate` → Run workflow.
+Approve when the `production` environment prompts.
+
+Review the `-- package changes --` diff in the log, then repeat with `switch`.
+
+One host at a time; hosts move independently.
+
+### From the workstation instead
 
 ```bash
-cd ~/homelab && git pull && nixos-rebuild switch --flake .#<output>
+cd ~/homelab
+./scripts/deploy.sh <node> dry-activate
+./scripts/deploy.sh <node> switch
 ```
 
-Hosts move **independently** so pull/rebuild only the ones you want on the new
-pins.
+Node names are the keys of `deploy.nodes` in `flake.nix`.
 
 ---
 
-## If an update breaks something
+## 3. If it breaks
 
-Fastest recovery: revert the lock commit and rebuild. More info in
-[rollback.md](rollback.md).
+See [rollback.md](rollback.md).
 
 ```bash
-# on workstation
 git revert <lock-commit> && git push
-
-# then on the affected host:
-cd ~/homelab && git pull && nixos-rebuild switch --flake .#<output>
 ```
+
+Then deploy the reverted lock.
 
 ---
 
 ## Notes
 
-- `flake.nix` changes and the matching `flake.lock` change go in the **same
-  commit**. The two should never be in disagreement.
-- Updates are always deliberate. There is no "auto-update".
+- `flake.nix` and its `flake.lock` change go in the **same commit**.
+- Only `nixpkgs-unstable` moves immich; `nixpkgs` moves every other host.
+- To hold one package back, overlay it from a second pinned input rather than
+  splitting the channel.
