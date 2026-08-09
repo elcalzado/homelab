@@ -12,6 +12,8 @@
 | immich      | `10.0.30.9`   | VM       |
 | portainer   | `10.0.30.10`  | LXC      |
 | gatus       | `10.0.30.11`  | LXC      |
+| runner      | `10.0.30.12`  | LXC      |
+| builder     | `10.0.30.13`  | VM       |
 
 ## qbittorrent VPN / kill-switch
 

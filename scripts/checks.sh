@@ -22,8 +22,14 @@ host_names() {
 }
 
 # Emits the host list as JSON so CI can fan out one build job per host.
+system_of() {
+  nix_ eval --raw ".#nixosConfigurations.\"$1\".config.nixpkgs.hostPlatform.system"
+}
+
+# shellcheck disable=SC2016
 list_hosts() {
-  nix_ eval --json '.#nixosConfigurations' --apply 'c: builtins.attrNames c'
+  nix_ eval --json '.#nixosConfigurations' --apply \
+    'c: map (n: { host = n; system = c.${n}.config.nixpkgs.hostPlatform.system; }) (builtins.attrNames c)'
 }
 
 eval_hosts() {
@@ -36,12 +42,13 @@ eval_hosts() {
 }
 
 build_hosts() {
-  local name names
+  local name names system
   if [ "$#" -gt 0 ]; then names="$1"; else names="$(host_names)"; fi
   while IFS= read -r name; do
     [ -n "$name" ] || continue
-    echo "  build $name"
-    nix_ build --no-link --print-build-logs ".#checks.x86_64-linux.\"$name\""
+    system=$(system_of "$name")
+    echo "  build $name ($system)"
+    nix_ build --no-link --print-build-logs ".#checks.$system.\"$name\""
   done <<< "$names"
 }
 

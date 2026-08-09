@@ -1,4 +1,8 @@
-{ lib, ... }:
+{ lib, pkgs, ... }:
+let
+  inherit (pkgs.stdenv.hostPlatform) isx86_64;
+  serialPort = if isx86_64 then "ttyS0" else "ttyAMA0";
+in
 {
   boot = {
     # --- Bootloader ---
@@ -12,7 +16,7 @@
 
     # Keep normal VGA/noVNC as the primary console
     kernelParams = [
-      "console=ttyS0,115200"
+      "console=${serialPort},115200"
       "console=tty0"
     ];
 
@@ -23,14 +27,14 @@
   };
 
   # Add an additional serial login console
-  systemd.services."serial-getty@ttyS0".enable = true;
+  systemd.services."serial-getty@${serialPort}".enable = true;
 
   # Keep for any QEMU/KVM VM; harmless (inactive) on true baremetal.
   services.qemuGuest.enable = true;
 
   hardware = {
     enableRedistributableFirmware = true;
-    cpu.intel.updateMicrocode = lib.mkDefault true;
-    cpu.amd.updateMicrocode = lib.mkDefault true;
+    cpu.intel.updateMicrocode = lib.mkDefault isx86_64;
+    cpu.amd.updateMicrocode = lib.mkDefault isx86_64;
   };
 }

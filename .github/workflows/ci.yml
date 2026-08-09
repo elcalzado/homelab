@@ -12,35 +12,57 @@ concurrency:
 
 # Every job installs Nix and runs the same scripts/checks.sh the pre-commit hook uses.
 jobs:
+  eval:
+    name: nix eval (every host, all architectures)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: DeterminateSystems/nix-installer-action@v22
+      - run: ./scripts/checks.sh eval
+
   discover:
     name: list hosts
     runs-on: ubuntu-latest
     outputs:
       hosts: ${{ steps.list.outputs.hosts }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: DeterminateSystems/nix-installer-action@v22
       - id: list
-        run: echo "hosts=$(./scripts/checks.sh list)" >> "$GITHUB_OUTPUT"
+        run: |
+          hosts=$(./scripts/checks.sh list)
+          hosts=$(printf '%s' "$hosts" | python3 -c 'import json,sys; print(json.dumps([dict(h, runner="ubuntu-24.04-arm" if h["system"] == "aarch64-linux" else "ubuntu-latest") for h in json.load(sys.stdin)]))')
+          echo "hosts=$hosts" >> "$GITHUB_OUTPUT"
 
   build:
     name: nix build ${{ matrix.host }}
     needs: discover
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
       matrix:
-        host: ${{ fromJSON(needs.discover.outputs.hosts) }}
+        include: ${{ fromJSON(needs.discover.outputs.hosts) }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: jlumbroso/free-disk-space@v1.3.1
+        with:
+          tool-cache: true
+          android: true
+          dotnet: true
+          haskell: true
+          docker-images: true
+          large-packages: false
+          swap-storage: false
+      - uses: actions/checkout@v5
       - uses: DeterminateSystems/nix-installer-action@v22
       - run: ./scripts/checks.sh build '${{ matrix.host }}'
+      - if: failure()
+        run: df -h /
 
   lint:
     name: nix lint (deadnix + statix)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: DeterminateSystems/nix-installer-action@v22
       - run: ./scripts/checks.sh lint
 
@@ -48,7 +70,7 @@ jobs:
     name: shellcheck
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: DeterminateSystems/nix-installer-action@v22
       - run: ./scripts/checks.sh shellcheck
 
@@ -56,7 +78,7 @@ jobs:
     name: gitleaks
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0   # full history for the git-aware scan
       - uses: DeterminateSystems/nix-installer-action@v22

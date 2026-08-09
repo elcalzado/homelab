@@ -41,3 +41,13 @@ creation_rules:
     age: >-
       age1wjsv39vghpjzhd556rtqkk4pqul0pjzkj5nj3nlxw5470lvkr43sp96p2j,
       age1sv5zehntfzq7llmvp3ax80604zw0xq6ldkhyqeg0ut5729ktvddsg87wah
+
+  - path_regex: secrets/runner\.yaml$
+    age: >-
+      age1s8erp0pml0pesmlguw886v6a2ak5zej082x3l362stp8x5qtuffs4ym574,
+      age1sv5zehntfzq7llmvp3ax80604zw0xq6ldkhyqeg0ut5729ktvddsg87wah
+
+  - path_regex: secrets/builder\.yaml$
+    age: >-
+      age1snjjhr7cxkwyajr0mtyq7f0n0phh4wuqsyf29dpv9u972tu3tprqhmmt5w,
+      age1sv5zehntfzq7llmvp3ax80604zw0xq6ldkhyqeg0ut5729ktvddsg87wah

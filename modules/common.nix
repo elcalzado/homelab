@@ -9,7 +9,10 @@ in
     ./backup.nix
   ];
 
-  nix.settings.experimental-features = [ "nix-command" "flakes" ];
+  nix.settings = {
+    experimental-features = [ "nix-command" "flakes" ];
+    trusted-users = [ "guster" "deploy" ];
+  };
 
   services.openssh = {
     enable = true;
@@ -17,10 +20,20 @@ in
     settings = {
       PermitRootLogin = "no";
       PasswordAuthentication = false;
+      UseDns = true;
     };
   };
 
-  security.sudo.wheelNeedsPassword = true;
+  security.sudo = {
+    wheelNeedsPassword = true;
+
+    extraRules = [
+      {
+        users = [ "deploy" ];
+        commands = [ { command = "ALL"; options = [ "NOPASSWD" ]; } ];
+      }
+    ];
+  };
 
   sops.age.keyFile = "/var/lib/sops-nix/key.txt";
   sops.secrets."guster/passwordHash".neededForUsers = true;
@@ -28,20 +41,32 @@ in
   users = {
     mutableUsers = false;
 
-    groups.guster.gid = gusterUid;
-    users.guster = {
-      isNormalUser = true;
-      uid = gusterUid;
-      group = "guster";
-      extraGroups = [ "wheel" ];
-      hashedPasswordFile = config.sops.secrets."guster/passwordHash".path;
-      openssh.authorizedKeys.keys = [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICrOEgaElLZiqDSSQy/NkyhIqfSnMGlRz/iHR6SXvL5Y" # tap-man
-      ];
+    groups = {
+      guster.gid = gusterUid;
+      deploy = { };
     };
 
-    users.root = {
-      hashedPassword = "!";
+    users = {
+      guster = {
+        isNormalUser = true;
+        uid = gusterUid;
+        group = "guster";
+        extraGroups = [ "wheel" ];
+        hashedPasswordFile = config.sops.secrets."guster/passwordHash".path;
+        openssh.authorizedKeys.keys = [
+          "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICrOEgaElLZiqDSSQy/NkyhIqfSnMGlRz/iHR6SXvL5Y" # tap-man
+        ];
+      };
+
+      root.hashedPassword = "!";
+
+      deploy = {
+        isNormalUser = true;
+        group = "deploy";
+        openssh.authorizedKeys.keys = [
+          ''from="runner.home.arpa",restrict ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBqCbLUC2OL40NzX9gHg6J7vSC6B+6GFLUXYJcElfcpo deploy@runner''
+        ];
+      };
     };
   };
 

@@ -1,0 +1,43 @@
+name: deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      host:
+        description: Host to deploy
+        required: true
+        type: choice
+        options:
+          - builder
+          - gatus
+          - glance
+          - immich
+          - jellyfin
+          - omada
+          - portainer
+          - qbittorrent
+          - servarr
+      mode:
+        description: Preview only, or actually switch
+        required: true
+        default: dry-activate
+        type: choice
+        options:
+          - dry-activate
+          - switch
+
+permissions:
+  contents: read
+
+concurrency:
+  group: host-${{ inputs.host }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: ${{ inputs.mode }} ${{ inputs.host }}
+    runs-on: [self-hosted, homelab]
+    environment: production
+    steps:
+      - uses: actions/checkout@v5
+      - run: ./scripts/deploy.sh '${{ inputs.host }}' '${{ inputs.mode }}'

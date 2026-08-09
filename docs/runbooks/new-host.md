@@ -31,8 +31,8 @@ Identity + which modules it pulls in. No platform details.
 
 ```nix
 nixosConfigurations =
-  (mkHost "glance")
-  // (mkHost "<name>");     # auto-creates outputs <name>-lxc and <name>-vm
+  (mkHost nixpkgs "glance" [ "amd64-lxc" "amd64-vm" ] )
+  // (mkHost nixpkgs "<name>" [ "amd64-lxc" "amd64-vm" ]);   # one output per target
 ```
 
 **Commit + push:**
@@ -66,7 +66,7 @@ SSH will be set up when the build is finished using the public key(s) in common.
 ### 2b. First build
 
 ```bash
-passwd root                               # temp root password, for the copy
+passwd root                               # temp root password
 
 # sops hosts: age key first
 install -d -m700 /var/lib/sops-nix
@@ -79,19 +79,15 @@ ssh-keygen -A
 /run/current-system/sw/bin/sshd -o PermitRootLogin=yes -o PasswordAuthentication=yes
 ```
 
-From your workstation:
+From your workstation, builds on `builder`, activates in the container:
 
 ```bash
-tar czf - --exclude=.git . | ssh -o PubkeyAuthentication=no -o PreferredAuthentications=password \
-  root@10.0.30.<x> 'mkdir -p /root/homelab && tar xzf - -C /root/homelab'
-```
+ssh-copy-id root@<host-ip>
 
-Back in the container:
-
-```bash
-pkill -x sshd
-NIX_CONFIG="experimental-features = nix-command flakes" \
-nixos-rebuild switch --flake /root/homelab#<name>-lxc
+nix run --extra-experimental-features 'nix-command flakes' \
+  nixpkgs#nixos-rebuild-ng -- switch \
+  --flake .#<name>-amd64-lxc \
+  --target-host root@<host-ip>
 ```
 
 Jump to Step 3.
@@ -131,7 +127,8 @@ The following command partitions the disk, installs the whole config, and reboot
 ```bash
 nix run --extra-experimental-features "nix-command flakes"  \
   github:nix-community/nixos-anywhere --                    \
-  --flake .#<name>-vm                                       \
+  --flake .#<name>-amd64-vm                                 \
+  --build-on remote                                         \
   --extra-files /tmp/extra                                  \
   root@10.0.30.<x>
 ```
@@ -143,29 +140,53 @@ Jump to Step 3
 
 ---
 
-## Step 3 — Steady state
+## Step 3 — Add it to the deploy pipeline
 
-First get the repo on the target with one of the following:
-- Pass it in from your workstation:
+**1.** Add a node to `deploy.nodes` in `flake.nix`:
+
+```nix
+<name> = mkNode "<name>-amd64-vm";     # or -amd64-lxc
+```
+
+**2.** Add `<name>` to the `host` dropdown in `.github/workflows/deploy.yml`
+and `.github/workflows/rollback.yml`.
+
+**3.** Add the host to `docs/network.md` and the README table.
+
+Commit and push, then deploy from Actions → **deploy** → `dry-activate`,
+then `switch`.
+
+---
+
+## Step 4 — Steady state
+
+Actions → **deploy** → pick host → `switch`. See [updating.md](updating.md).
+
+...or...
+
+From workstation (builds on builder):
 ```bash
-rsync -a --delete --exclude='.git' ./ guster@<host-ip>:~/homelab/
+nix run --extra-experimental-features 'nix-command flakes' \
+  nixpkgs#nixos-rebuild-ng -- switch \
+  --flake .#<name>-<arch>-<platform> \
+  --target-host guster@<host>.home.arpa --sudo --ask-sudo-password
 ```
 
 ...or...
 
-- Clone it from GitHub from within the target:
+From workstation (builds on host):
 ```bash
-cd ~ && git clone https://github.com/elcalzado/homelab.git
+rsync -a --delete --exclude='.git' ./ guster@<host>.home.arpa:~/homelab/ 
+ssh -t guster@<host>.home.arpa 'cd ~/homelab && sudo nixos-rebuild switch --flake .#<host>-<arch>-<platform>'
 ```
 
-Then enter the target and rebuild:
-```bash
-ssh -t guster@<host-ip> 'cd ~/homelab && sudo nixos-rebuild switch --flake .#<name>-vm'   # or .#<name>-lxc
-```
 
 ---
 
 ## Notes
 
 - **stateVersion** is per-host and set once. Never bump it to "upgrade". More info in
-  [updating.md](updating.md). 
+  [updating.md](updating.md).
+- Steps 1-2 are the only manual `nixos-rebuild` a host ever needs. Everything
+  after goes through Actions.
+- The workstation offloads Linux builds to `builder` via `/etc/nix/machines`. 

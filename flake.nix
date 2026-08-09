@@ -8,44 +8,89 @@
     sops-nix.inputs.nixpkgs.follows = "nixpkgs";
     disko.url = "github:nix-community/disko";
     disko.inputs.nixpkgs.follows = "nixpkgs";
+    deploy-rs.url = "github:serokell/deploy-rs";
+    deploy-rs.inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = { nixpkgs, nixpkgs-unstable, ... }@inputs:
+  outputs = { nixpkgs, nixpkgs-unstable, deploy-rs, ... }@inputs:
     let
-      system = "x86_64-linux";
+      inherit (nixpkgs) lib;
 
-      mkSystem = channel: modules:
+      mkSystem = channel: system: modules:
         channel.lib.nixosSystem {
-          inherit system modules;
+          modules = modules ++ [ { nixpkgs.hostPlatform = system; } ];
           specialArgs = { inherit inputs; };
         };
 
-      targets = {
+      platforms = {
         lxc = [ ./modules/lxc.nix ];
         vm = [ ./modules/vm.nix ./modules/disk.nix ];
       };
 
+      targets = {
+        amd64-lxc = { system = "x86_64-linux"; modules = platforms.lxc; };
+        amd64-vm = { system = "x86_64-linux"; modules = platforms.vm; };
+        arm64-lxc = { system = "aarch64-linux"; modules = platforms.lxc; };
+        arm64-vm = { system = "aarch64-linux"; modules = platforms.vm; };
+      };
+
       mkHost = channel: name: names:
-        nixpkgs.lib.listToAttrs (map
-          (target: nixpkgs.lib.nameValuePair "${name}-${target}"
-            (mkSystem channel ([ ./hosts/${name} ] ++ targets.${target})))
+        lib.listToAttrs (map
+          (target: lib.nameValuePair "${name}-${target}"
+            (mkSystem channel targets.${target}.system ([ ./hosts/${name} ] ++ targets.${target}.modules)))
           names);
+
       hosts =
-        (mkHost nixpkgs "glance" [ "lxc" "vm" ])
-        // (mkHost nixpkgs "qbittorrent" [ "vm" ])
-        // (mkHost nixpkgs "omada" [ "lxc" "vm" ])
-        // (mkHost nixpkgs "servarr" [ "vm" ])
-        // (mkHost nixpkgs "jellyfin" [ "vm" ])
-        // (mkHost nixpkgs-unstable "immich" [ "vm" ])
-        // (mkHost nixpkgs "portainer" [ "lxc" "vm" ])
-        // (mkHost nixpkgs "gatus" [ "lxc" "vm" ]);
+        (mkHost nixpkgs "glance" [ "amd64-lxc" "amd64-vm" ])
+        // (mkHost nixpkgs "qbittorrent" [ "amd64-vm" ])
+        // (mkHost nixpkgs "omada" [ "amd64-lxc" "amd64-vm" ])
+        // (mkHost nixpkgs "servarr" [ "amd64-vm" ])
+        // (mkHost nixpkgs "jellyfin" [ "amd64-vm" ])
+        // (mkHost nixpkgs-unstable "immich" [ "amd64-vm" ])
+        // (mkHost nixpkgs "portainer" [ "amd64-lxc" "amd64-vm" ])
+        // (mkHost nixpkgs "gatus" [ "amd64-lxc" "amd64-vm" ])
+        // (mkHost nixpkgs "runner" [ "amd64-lxc" ])
+        // (mkHost nixpkgs "builder" [ "amd64-vm" ]);
+
+      mkNode = output:
+        let
+          cfg = hosts.${output};
+          system = cfg.config.nixpkgs.hostPlatform.system;
+        in
+        {
+          hostname = (lib.head cfg.config.networking.interfaces.eth0.ipv4.addresses).address;
+          sshUser = "deploy";
+          autoRollback = true;
+          magicRollback = true;
+          profiles.system = {
+            user = "root";
+            path = deploy-rs.lib.${system}.activate.nixos cfg;
+          };
+        };
+
+      nodes = {
+        builder = mkNode "builder-amd64-vm";
+        gatus = mkNode "gatus-amd64-lxc";
+        glance = mkNode "glance-amd64-lxc";
+        immich = mkNode "immich-amd64-vm";
+        jellyfin = mkNode "jellyfin-amd64-vm";
+        omada = mkNode "omada-amd64-lxc";
+        portainer = mkNode "portainer-amd64-lxc";
+        qbittorrent = mkNode "qbittorrent-amd64-vm";
+        runner = mkNode "runner-amd64-lxc";
+        servarr = mkNode "servarr-amd64-vm";
+      };
     in {
       nixosConfigurations = hosts;
 
+      deploy = { inherit nodes; };
+
       # `nix flake check` builds every host, so a config that evaluates but does
       # not build fails here rather than on the machine.
-      checks.${system} = nixpkgs.lib.mapAttrs'
-        (name: cfg: nixpkgs.lib.nameValuePair name cfg.config.system.build.toplevel)
-        hosts;
+      checks = lib.mapAttrs
+        (system: names:
+          lib.genAttrs names (name: hosts.${name}.config.system.build.toplevel)
+          // deploy-rs.lib.${system}.deployChecks { inherit nodes; })
+        (lib.groupBy (name: hosts.${name}.config.nixpkgs.hostPlatform.system) (lib.attrNames hosts));
     };
 }

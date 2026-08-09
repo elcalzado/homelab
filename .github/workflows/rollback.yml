@@ -1,0 +1,40 @@
+name: rollback
+
+on:
+  workflow_dispatch:
+    inputs:
+      host:
+        description: Host to roll back to its previous generation
+        required: true
+        type: choice
+        options:
+          - builder
+          - gatus
+          - glance
+          - immich
+          - jellyfin
+          - omada
+          - portainer
+          - qbittorrent
+          - servarr
+
+permissions:
+  contents: read
+
+concurrency:
+  group: host-${{ inputs.host }}
+  cancel-in-progress: false
+
+jobs:
+  rollback:
+    name: rollback ${{ inputs.host }}
+    runs-on: [self-hosted, homelab]
+    steps:
+      - uses: actions/checkout@v5
+      - run: |
+          address=$(nix --extra-experimental-features 'nix-command flakes' \
+            eval --raw ".#deploy.nodes.\"$HOST\".hostname")
+          ssh -i /run/secrets/deploy/sshKey -o StrictHostKeyChecking=accept-new \
+            "deploy@$address" sudo nixos-rebuild switch --rollback
+        env:
+          HOST: ${{ inputs.host }}
