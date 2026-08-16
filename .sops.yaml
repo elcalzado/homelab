@@ -51,3 +51,7 @@ creation_rules:
     age: >-
       age1snjjhr7cxkwyajr0mtyq7f0n0phh4wuqsyf29dpv9u972tu3tprqhmmt5w,
       age1sv5zehntfzq7llmvp3ax80604zw0xq6ldkhyqeg0ut5729ktvddsg87wah
+  - path_regex: secrets/gamebox\.yaml$
+    age: >-
+      age1agz48dv9vesr8kgkwxcwecucspy4afq87cvd2arr935e73ajgapqjxt5k3,
+      age1sv5zehntfzq7llmvp3ax80604zw0xq6ldkhyqeg0ut5729ktvddsg87wah

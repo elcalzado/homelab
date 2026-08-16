@@ -39,3 +39,4 @@ produces two outputs from one definition:
 | gatus | [gatus](https://github.com/TwiN/gatus) | any |
 | runner | [github-runner](https://github.com/actions/runner) + [deploy-rs](https://github.com/serokell/deploy-rs) | lxc |
 | builder | remote nix builder (`x86_64-linux`, `aarch64-linux`) | vm |
+| gamebox | [portainer edge agent](https://github.com/portainer/portainer) + game servers | vm |
