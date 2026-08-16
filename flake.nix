@@ -50,7 +50,8 @@
         // (mkHost nixpkgs "portainer" [ "amd64-lxc" "amd64-vm" ])
         // (mkHost nixpkgs "gatus" [ "amd64-lxc" "amd64-vm" ])
         // (mkHost nixpkgs "runner" [ "amd64-lxc" ])
-        // (mkHost nixpkgs "builder" [ "amd64-vm" ]);
+        // (mkHost nixpkgs "builder" [ "amd64-vm" ])
+        // (mkHost nixpkgs "gamebox" [ "amd64-vm" ]);
 
       mkNode = output:
         let
@@ -79,6 +80,7 @@
         qbittorrent = mkNode "qbittorrent-amd64-vm";
         runner = mkNode "runner-amd64-lxc";
         servarr = mkNode "servarr-amd64-vm";
+        gamebox = mkNode "gamebox-amd64-vm";
       };
     in {
       nixosConfigurations = hosts;

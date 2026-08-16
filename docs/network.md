@@ -14,6 +14,7 @@
 | gatus       | `10.0.30.11`  | LXC      |
 | runner      | `10.0.30.12`  | LXC      |
 | builder     | `10.0.30.13`  | VM       |
+| gamebox     | `10.0.50.3`   | VM       |
 
 ## qbittorrent VPN / kill-switch
 
