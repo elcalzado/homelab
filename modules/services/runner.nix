@@ -48,7 +48,12 @@ in
       user = "github-runner";
       group = "github-runner";
       extraLabels = [ "homelab" ];
-      extraPackages = with pkgs; [ git openssh nix ];
+      extraPackages = with pkgs; [
+        git
+        openssh
+        nix
+        inputs.deploy-rs.packages.${pkgs.stdenv.hostPlatform.system}.default
+      ];
 
       serviceOverrides = {
         Restart = lib.mkForce "always";
@@ -63,10 +68,6 @@ in
     };
 
     users.groups.github-runner = { };
-
-    environment.systemPackages = [
-      inputs.deploy-rs.packages.${pkgs.stdenv.hostPlatform.system}.default
-    ];
 
     programs.ssh.knownHosts.${cfg.builder.host}.publicKey = cfg.builder.hostKey;
 
