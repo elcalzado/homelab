@@ -23,14 +23,12 @@ let
   resumeDir  = "${profileDir}/qBittorrent/data/BT_backup";
   configFile = "${configDir}/qBittorrent.conf";
   scanLog  = "/var/log/qbittorrent/clamav_scan.log";
-  clamavDb = "/var/lib/clamav";
 
   clamavScan = pkgs.writeShellApplication {
     name = "clamav_scan";
     runtimeInputs = [ pkgs.clamav pkgs.coreutils ];
     text = ''
       SCAN_LOG=${lib.escapeShellArg scanLog}
-      CLAMAV_DB=${lib.escapeShellArg clamavDb}
       ${builtins.readFile ../../scripts/qbittorrent/clamav_scan.sh}
     '';
   };
@@ -75,12 +73,16 @@ in
         listen-address = "127.0.0.1";
         server = [
           "/home.arpa/${lanGateway}"
+          "/30.0.10.in-addr.arpa/${lanGateway}"
           wgDns
         ];
       };
     };
 
-    clamav.updater.enable = true;
+    clamav = {
+      updater.enable = true;
+      daemon.enable = true;
+    };
   };
 
   sops.secrets = {
@@ -108,9 +110,13 @@ in
     ];
 
     services.qbittorrent = {
-      serviceConfig.UMask = "0002";
+      serviceConfig = {
+        Restart = "on-failure";
+        UMask = "0002";
+      };
       unitConfig.RequiresMountsFor = [ mountDir ];
-      after = [ "wg-quick-wg0.service" ];
+      after = [ "wg-quick-wg0.service" "clamav-daemon.service" ];
+      bindsTo = [ "clamav-daemon.service" ];
       # Rewrite the config authoritatively on every start, then append the WebUI
       # password hash and API key from the sops secrets.
       restartTriggers = [ qbtConfBase ];
