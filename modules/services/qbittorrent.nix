@@ -73,6 +73,7 @@ in
         listen-address = "127.0.0.1";
         server = [
           "/home.arpa/${lanGateway}"
+          "/30.0.10.in-addr.arpa/${lanGateway}"
           wgDns
         ];
       };
