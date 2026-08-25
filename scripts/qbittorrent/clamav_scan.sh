@@ -7,7 +7,7 @@ fi
 
 # -r recursive. --database points clamscan at the freshclam-managed DB
 set +e
-output="$(clamscan -r --database="$CLAMAV_DB" "$TARGET_PATH" 2>&1)"
+output="$(clamdscan --fdpass --multiscan "$TARGET_PATH" 2>&1)"
 rc=$?
 set -e
 
