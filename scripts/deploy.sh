@@ -13,7 +13,7 @@ root="$(git rev-parse --show-toplevel)"
 cd "$root"
 
 key=/run/secrets/deploy/sshKey
-ssh_opts=(-i "$key" -o StrictHostKeyChecking=accept-new -o ConnectTimeout=10)
+ssh_opts=(-i "$key" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10)
 
 nix_() { nix --extra-experimental-features 'nix-command flakes' "$@"; }
 
