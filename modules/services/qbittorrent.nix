@@ -23,14 +23,12 @@ let
   resumeDir  = "${profileDir}/qBittorrent/data/BT_backup";
   configFile = "${configDir}/qBittorrent.conf";
   scanLog  = "/var/log/qbittorrent/clamav_scan.log";
-  clamavDb = "/var/lib/clamav";
 
   clamavScan = pkgs.writeShellApplication {
     name = "clamav_scan";
     runtimeInputs = [ pkgs.clamav pkgs.coreutils ];
     text = ''
       SCAN_LOG=${lib.escapeShellArg scanLog}
-      CLAMAV_DB=${lib.escapeShellArg clamavDb}
       ${builtins.readFile ../../scripts/qbittorrent/clamav_scan.sh}
     '';
   };
