@@ -6,3 +6,4 @@ restrict,command="rrsync -wo /mnt/blueberry/backups/immich" ssh-ed25519 AAAAC3Nz
 restrict,command="rrsync -wo /mnt/blueberry/backups/portainer" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPYTxUjOMQ7ekeJo7lnVhSfQrx9d1zu9Hb6f0JJjS6b5 backup@portainer
 restrict,command="rrsync -wo /mnt/blueberry/backups/gatus" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIALsgfgwGzr0ncWkH78BiLa7kXeS40c/PdbO3koWga/y backup@gatus
 restrict,command="rrsync -wo /mnt/blueberry/backups/nextcloud" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICbB1VfY+vBUYRSWOIhLuxtP64VeKxSGkdW52pq5FwdG backup@nextcloud
+restrict,command="rrsync -wo /mnt/blueberry/backups/home-assistant" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILOQ+VgEsTMZlDv5IFpcjlXI1bHqLBaJmPQ7q/C6u8EY backup@home-assistant
