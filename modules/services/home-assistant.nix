@@ -1,4 +1,9 @@
 { config, ... }:
+let
+  stateDir = "/var/lib/hass";
+  autoBackupDir = "${stateDir}/backups";
+  autoBackupStaleAfterHours = 48;
+in
 {
   # Web UI on :8123
   services.home-assistant = {
@@ -41,6 +46,9 @@
   homelab.backup.jobs.home-assistant = {
     at = "00:10";
     databases = [ { engine = "postgres"; name = "hass"; } ];
+    trees = [ autoBackupDir ];
+    maxAge = autoBackupStaleAfterHours;
+    maxAgePaths = [ autoBackupDir ];
   };
 
   networking.firewall.allowedTCPPorts = [
