@@ -74,9 +74,13 @@ in
         (web { name = "qbittorrent"; group = "media"; url = "http://qbittorrent.home.arpa:8080"; })
 
         (web { name = "immich"; group = "photos"; url = "http://immich.home.arpa:2283/api/server/ping"; })
-        
+
+        (web { name = "nextcloud"; group = "documents"; url = "http://nextcloud.home.arpa"; })
+
+
         (web { name = "glance"; group = "management"; url = "http://glance.home.arpa:8080"; })
         (web { name = "portainer"; group = "management"; url = "https://portainer.home.arpa:9443"; insecure = true; })
+        (web { name = "home-assistant"; group = "management"; url = "http://hass.home.arpa:8123"; })
 
         (web { name = "pve1"; group = "infrastructure"; url = "https://pve1.home.arpa:8006"; insecure = true; })
         (web { name = "pve2"; group = "infrastructure"; url = "https://pve2.home.arpa:8006"; insecure = true; })
