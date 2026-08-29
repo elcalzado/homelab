@@ -39,8 +39,10 @@
       arm64-vm = { system = "aarch64-linux"; modules = platforms.vm; };
     };
 
-    hostNames = lib.attrNames
-      (lib.filterAttrs (_name: type: type == "directory") (builtins.readDir ./hosts));
+    hostNames = lib.filter
+      (name: builtins.pathExists (./hosts + "/${name}/meta.nix"))
+      (lib.attrNames
+        (lib.filterAttrs (_name: type: type == "directory") (builtins.readDir ./hosts)));
 
     hostMeta = lib.genAttrs hostNames (name: import ./hosts/${name}/meta.nix);
 
