@@ -23,3 +23,19 @@ from one definition.
 - `proxmox/`  Proxmox-host notes + container-creation scripts
 - `truenas/`  NAS-side config the flake doesn't build
 - `docs/`     network map, storage layout, and runbooks
+
+## Hosts
+
+| Name        | Address       | Platform |
+|-------------|---------------|----------|
+| omada       | `10.0.10.2`   | LXC      |
+| qbittorrent | `10.0.30.5`   | VM       |
+| glance      | `10.0.30.6`   | LXC      |
+| jellyfin    | `10.0.30.7`   | VM       |
+| servarr     | `10.0.30.8`   | VM       |
+| immich      | `10.0.30.9`   | VM       |
+| portainer   | `10.0.30.10`  | LXC      |
+| gatus       | `10.0.30.11`  | LXC      |
+| runner      | `10.0.30.12`  | LXC      |
+| builder     | `10.0.30.13`  | VM       |
+| nextcloud   | `10.0.30.14`  | VM       |

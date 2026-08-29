@@ -51,3 +51,8 @@ creation_rules:
     age: >-
       age1snjjhr7cxkwyajr0mtyq7f0n0phh4wuqsyf29dpv9u972tu3tprqhmmt5w,
       age1sv5zehntfzq7llmvp3ax80604zw0xq6ldkhyqeg0ut5729ktvddsg87wah
+
+  - path_regex: secrets/nextcloud\.yaml$
+    age: >-
+      age1ngnlnwd8un6n2p7gfd0azeet0j28p9t5s6tmg3fr047us9ay5shqst9uaa,
+      age1sv5zehntfzq7llmvp3ax80604zw0xq6ldkhyqeg0ut5729ktvddsg87wah

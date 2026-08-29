@@ -31,7 +31,7 @@ if [[ "$PLATFORM" == "vm" ]]; then
   MEMORY="$(ask "RAM (MB)" "4096")"
   BALLOON="$(ask "balloon (MB, 0=off)" "0")"
   DISK="$(ask "disk (GB)" "16")"
-  ISO="$(ask "install ISO" "local:iso/nixos-minimal-26.05.3869.95ca1e203c07-x86_64-linux.iso")"
+  ISO="$(ask "install ISO" "local:iso/nixos-minimal-26.05.8538.d57af924f160-x86_64-linux.iso")"
 
   cat > "$OUT" <<EOF
 #!/usr/bin/env bash

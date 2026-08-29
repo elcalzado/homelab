@@ -17,6 +17,7 @@ on:
           - portainer
           - qbittorrent
           - servarr
+          - nextcloud
 
 permissions:
   contents: read

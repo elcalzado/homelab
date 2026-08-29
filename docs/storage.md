@@ -75,7 +75,7 @@ A numeric id is pinned only when something outside the host compares it. Everyth
 | 1000–1999 | People | `guster` 1000 |
 | 2000–2999 | Management | |
 | 3000-3999 | Media | `entertainment` 3000 |
-| 4000-4999 | Data | `photos` 4000 |
+| 4000-4999 | Data | `photos` 4000, `documents` 4010 |
 | 9000-9999 | Public | |
 
 ## Directories
