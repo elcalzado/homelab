@@ -77,7 +77,6 @@ in
 
         (web { name = "nextcloud"; group = "documents"; url = "http://nextcloud.home.arpa"; })
 
-
         (web { name = "glance"; group = "management"; url = "http://glance.home.arpa:8080"; })
         (web { name = "portainer"; group = "management"; url = "https://portainer.home.arpa:9443"; insecure = true; })
         (web { name = "home-assistant"; group = "management"; url = "http://hass.home.arpa:8123"; })
