@@ -18,6 +18,7 @@ on:
           - qbittorrent
           - servarr
           - nextcloud
+          - home-assistant
       mode:
         description: Preview only, or actually switch
         required: true

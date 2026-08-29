@@ -24,7 +24,7 @@
 
       platforms = {
         lxc = [ ./modules/lxc.nix ];
-        vm = [ ./modules/vm.nix ./modules/disk.nix ];
+        vm = [ ./modules/vm.nix ];
       };
 
       targets = {
@@ -51,7 +51,8 @@
         // (mkHost nixpkgs "gatus" [ "amd64-lxc" "amd64-vm" ])
         // (mkHost nixpkgs "runner" [ "amd64-lxc" ])
         // (mkHost nixpkgs "builder" [ "amd64-vm" ])
-        // (mkHost nixpkgs "nextcloud" [ "amd64-vm" ]);
+        // (mkHost nixpkgs "nextcloud" [ "amd64-vm" ])
+        // (mkHost nixpkgs "home-assistant" [ "amd64-lxc" ]);
 
       mkNode = output:
         let
@@ -81,6 +82,7 @@
         runner = mkNode "runner-amd64-lxc";
         servarr = mkNode "servarr-amd64-vm";
         nextcloud = mkNode "nextcloud-amd64-vm";
+        home-assistant = mkNode "home-assistant-amd64-lxc";
       };
     in {
       nixosConfigurations = hosts;

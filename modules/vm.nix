@@ -4,6 +4,10 @@ let
   serialPort = if isx86_64 then "ttyS0" else "ttyAMA0";
 in
 {
+  imports = [
+    ./disk.nix
+  ];
+
   boot = {
     # --- Bootloader ---
     loader.systemd-boot.enable = true;
