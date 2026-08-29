@@ -52,6 +52,45 @@ build_hosts() {
   done <<< "$names"
 }
 
+drvpaths_at_ref() {
+  local ref="$1"
+  local wt
+  wt="$(mktemp -d)"
+  git worktree add --quiet --detach "$wt" "$ref"
+  (
+    cd "$wt"
+    list_hosts | python3 -c 'import json,sys; [print(h["host"]) for h in json.load(sys.stdin)]' \
+    | while IFS= read -r name; do
+        drv=$(nix --extra-experimental-features 'nix-command flakes' eval --raw \
+          ".#nixosConfigurations.\"$name\".config.system.build.toplevel.drvPath" 2>/dev/null) || drv="MISSING"
+        printf '%s %s\n' "$name" "$drv"
+      done
+  )
+  git worktree remove --force "$wt"
+}
+
+affected_hosts() {
+  local base="$1"
+  local before after changed
+
+  before="$(drvpaths_at_ref "$base")"
+  after="$(drvpaths_at_ref "HEAD")"
+
+  changed="$(comm -13 <(sort <<< "$before") <(sort <<< "$after") | awk '{print $1}')"
+
+  if [ -z "$changed" ]; then
+    echo "[]"
+    return
+  fi
+
+  list_hosts | python3 -c "
+import json, sys
+changed = set('''$changed'''.split())
+hosts = json.load(sys.stdin)
+print(json.dumps([h for h in hosts if h['host'] in changed]))
+"
+}
+
 lint_nix() {
   run_tool deadnix --fail .
   run_tool statix check .
@@ -85,6 +124,7 @@ case "${1:-all}" in
   eval)            eval_hosts ;;
   build)           build_hosts "${@:2}" ;;
   list)            list_hosts ;;
+  affected)        affected_hosts "${2:?base ref required}" ;;
   lint)            lint_nix ;;
   shellcheck)      run_shellcheck ;;
   secrets)         scan_secrets ;;
