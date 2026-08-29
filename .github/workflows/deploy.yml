@@ -17,7 +17,6 @@ on:
           - portainer
           - qbittorrent
           - servarr
-          - gamebox
       mode:
         description: Preview only, or actually switch
         required: true

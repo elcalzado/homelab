@@ -17,7 +17,6 @@ on:
           - portainer
           - qbittorrent
           - servarr
-          - gamebox
 
 permissions:
   contents: read
