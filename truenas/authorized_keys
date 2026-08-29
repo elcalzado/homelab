@@ -5,3 +5,4 @@ restrict,command="rrsync -wo /mnt/blueberry/backups/servarr" ssh-ed25519 AAAAC3N
 restrict,command="rrsync -wo /mnt/blueberry/backups/immich" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICdjvQCD4t8MxJDLFJFOWz3QIbHm2AWkuw4ezT2mzV2s backup@immich
 restrict,command="rrsync -wo /mnt/blueberry/backups/portainer" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPYTxUjOMQ7ekeJo7lnVhSfQrx9d1zu9Hb6f0JJjS6b5 backup@portainer
 restrict,command="rrsync -wo /mnt/blueberry/backups/gatus" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIALsgfgwGzr0ncWkH78BiLa7kXeS40c/PdbO3koWga/y backup@gatus
+restrict,command="rrsync -wo /mnt/blueberry/backups/nextcloud" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICbB1VfY+vBUYRSWOIhLuxtP64VeKxSGkdW52pq5FwdG backup@nextcloud
