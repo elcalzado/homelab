@@ -17,6 +17,7 @@ on:
           - portainer
           - qbittorrent
           - servarr
+          - nextcloud
       mode:
         description: Preview only, or actually switch
         required: true
