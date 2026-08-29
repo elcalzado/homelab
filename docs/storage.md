@@ -33,7 +33,8 @@ backups/
 ├── jellyfin/jellyfin/
 ├── servarr/{sonarr,radarr,prowlarr,bazarr,seerr}/
 ├── qbittorrent/qbittorrent/
-└── immich/immich/
+├── immich/immich/
+└── ...
 ```
 
 ## Snapshots
