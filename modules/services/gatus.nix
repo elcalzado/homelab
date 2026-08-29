@@ -78,6 +78,10 @@ in
         (web { name = "glance"; group = "management"; url = "http://glance.home.arpa:8080"; })
         (web { name = "portainer"; group = "management"; url = "https://portainer.home.arpa:9443"; insecure = true; })
 
+        (web { name = "pve1"; group = "infrastructure"; url = "https://pve1.home.arpa:8006"; insecure = true; })
+        (web { name = "pve2"; group = "infrastructure"; url = "https://pve2.home.arpa:8006"; insecure = true; })
+        (web { name = "pve3"; group = "infrastructure"; url = "https://pve3.home.arpa:8006"; insecure = true; })
+
         (web { name = "truenas"; group = "infrastructure"; url = "https://truenas.home.arpa"; insecure = true; })
         (listening { name = "backups"; group = "infrastructure"; host = "truenas.home.arpa"; port = 22; })
         (listening { name = "runner"; group = "infrastructure"; host = "runner.home.arpa"; port = 22; })
