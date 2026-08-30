@@ -55,6 +55,7 @@ in
         hashedPasswordFile = config.sops.secrets."guster/passwordHash".path;
         openssh.authorizedKeys.keys = [
           "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICrOEgaElLZiqDSSQy/NkyhIqfSnMGlRz/iHR6SXvL5Y" # tap-man
+          "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGypMPZRySmPafnRuN1v48iNwXag/vMJdgkRQnKL5+5K" # magichead
         ];
       };
 
