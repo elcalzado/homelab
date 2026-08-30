@@ -75,7 +75,7 @@ in
 
         (web { name = "immich"; group = "photos"; url = "http://immich.home.arpa:2283/api/server/ping"; })
 
-        (web { name = "nextcloud"; group = "documents"; url = "http://nextcloud.home.arpa"; })
+        (web { name = "nextcloud"; group = "documents"; url = "https://nextcloud.home.arpa"; })
 
         (web { name = "glance"; group = "management"; url = "http://glance.home.arpa:8080"; })
         (web { name = "portainer"; group = "management"; url = "https://portainer.home.arpa:9443"; insecure = true; })
