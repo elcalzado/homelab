@@ -32,14 +32,9 @@ jobs:
       - uses: DeterminateSystems/nix-installer-action@v22
       - id: list
         run: |
-          hosts=$(./scripts/checks.sh affected '${{ github.event.pull_request.base.sha }}') || {
-            echo "::error::checks.sh affected failed"
-            exit 1
-          }
-          echo "$hosts" | python3 -c 'import json,sys; json.load(sys.stdin)' || {
-            echo "::error::affected hosts output was not valid JSON: $hosts"
-            exit 1
-          }
+          set -eo pipefail
+          hosts=$(./scripts/checks.sh affected '${{ github.event.pull_request.base.sha }}')
+          echo "$hosts" | python3 -c 'import json,sys; json.load(sys.stdin)'
           hosts=$(printf '%s' "$hosts" | python3 -c 'import json,sys; print(json.dumps([dict(h, runner="ubuntu-24.04-arm" if h["system"] == "aarch64-linux" else "ubuntu-latest") for h in json.load(sys.stdin)]))')
           echo "hosts=$hosts" >> "$GITHUB_OUTPUT"
 

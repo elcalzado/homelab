@@ -44,7 +44,14 @@
       (lib.attrNames
         (lib.filterAttrs (_name: type: type == "directory") (builtins.readDir ./hosts)));
 
-    hostMeta = lib.genAttrs hostNames (name: import ./hosts/${name}/meta.nix);
+    hostMeta = lib.genAttrs hostNames (name:
+      let
+        meta = import ./hosts/${name}/meta.nix;
+      in
+      if builtins.isAttrs meta
+      then meta
+      else throw "hosts/${name}/meta.nix must evaluate to a plain attrset, not a function or other value"
+    );
 
     mkHost = name:
       let
