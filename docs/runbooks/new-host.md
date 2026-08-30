@@ -27,14 +27,6 @@ Identity + which modules it pulls in. No platform details.
 }
 ```
 
-**3. Flake entry** — add the host to `nixosConfigurations` in `flake.nix`:
-
-```nix
-nixosConfigurations =
-  (mkHost nixpkgs "glance" [ "amd64-lxc" "amd64-vm" ] )
-  // (mkHost nixpkgs "<name>" [ "amd64-lxc" "amd64-vm" ]);   # one output per target
-```
-
 **Commit + push:**
 
 ```bash

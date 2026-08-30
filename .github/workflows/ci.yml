@@ -21,22 +21,27 @@ jobs:
       - run: ./scripts/checks.sh eval
 
   discover:
-    name: list hosts
+    name: list affected hosts
     runs-on: ubuntu-latest
     outputs:
       hosts: ${{ steps.list.outputs.hosts }}
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
       - uses: DeterminateSystems/nix-installer-action@v22
       - id: list
         run: |
-          hosts=$(./scripts/checks.sh list)
+          set -eo pipefail
+          hosts=$(./scripts/checks.sh affected '${{ github.event.pull_request.base.sha }}')
+          echo "$hosts" | python3 -c 'import json,sys; json.load(sys.stdin)'
           hosts=$(printf '%s' "$hosts" | python3 -c 'import json,sys; print(json.dumps([dict(h, runner="ubuntu-24.04-arm" if h["system"] == "aarch64-linux" else "ubuntu-latest") for h in json.load(sys.stdin)]))')
           echo "hosts=$hosts" >> "$GITHUB_OUTPUT"
 
   build:
     name: nix build ${{ matrix.host }}
     needs: discover
+    if: needs.discover.outputs.hosts != '[]'
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
