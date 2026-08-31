@@ -86,7 +86,6 @@ in
         (web { name = "pve3"; group = "infrastructure"; url = "https://pve3.home.arpa:8006"; insecure = true; })
 
         (web { name = "truenas"; group = "infrastructure"; url = "https://truenas.home.arpa"; insecure = true; })
-        (listening { name = "backups"; group = "infrastructure"; host = "truenas.home.arpa"; port = 22; })
         (listening { name = "runner"; group = "infrastructure"; host = "runner.home.arpa"; port = 22; })
         (listening { name = "builder"; group = "infrastructure"; host = "builder.home.arpa"; port = 22; })
       ];
