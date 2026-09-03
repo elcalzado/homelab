@@ -109,39 +109,49 @@ in
       "d ${profileDir}/qBittorrent/config 0755 ${config.services.qbittorrent.user} ${config.services.qbittorrent.group} -"
     ];
 
-    services.qbittorrent = {
-      serviceConfig = {
-        Restart = "on-failure";
-        UMask = "0002";
+    services = {
+      qbittorrent = {
+        serviceConfig = {
+          Restart = "always";
+          RestartSec = 10;
+          UMask = "0002";
+        };
+        unitConfig.RequiresMountsFor = [ mountDir ];
+        after = [ "wg-quick-wg0.service" "clamav-daemon.service" ];
+        bindsTo = [ "clamav-daemon.service" ];
+        # Rewrite the config authoritatively on every start, then append the WebUI
+        # password hash and API key from the sops secrets.
+        restartTriggers = [ qbtConfBase ];
+        preStart = ''
+          ${pkgs.coreutils}/bin/install -m600 ${qbtConfBase} ${configFile}
+          printf 'WebUI\\Password_PBKDF2=%s\n' "$(${pkgs.coreutils}/bin/cat ${config.sops.secrets."webui/passwordHash".path})" >> ${configFile}
+          printf 'WebUI\\APIKey=%s\n' "$(${pkgs.coreutils}/bin/cat ${config.sops.secrets."webui/apiKey".path})" >> ${configFile}
+        '';
       };
-      unitConfig.RequiresMountsFor = [ mountDir ];
-      after = [ "wg-quick-wg0.service" "clamav-daemon.service" ];
-      bindsTo = [ "clamav-daemon.service" ];
-      # Rewrite the config authoritatively on every start, then append the WebUI
-      # password hash and API key from the sops secrets.
-      restartTriggers = [ qbtConfBase ];
-      preStart = ''
-        ${pkgs.coreutils}/bin/install -m600 ${qbtConfBase} ${configFile}
-        printf 'WebUI\\Password_PBKDF2=%s\n' "$(${pkgs.coreutils}/bin/cat ${config.sops.secrets."webui/passwordHash".path})" >> ${configFile}
-        printf 'WebUI\\APIKey=%s\n' "$(${pkgs.coreutils}/bin/cat ${config.sops.secrets."webui/apiKey".path})" >> ${configFile}
-      '';
-    };
 
-    services.vpn-portforward = {
-      description = "VPN NAT-PMP port forwarding for qBittorrent";
-      after = [ "wg-quick-wg0.service" "qbittorrent.service" ];
-      partOf = [ "qbittorrent.service" ];
-      wants = [ "wg-quick-wg0.service" ];
-      wantedBy = [ "multi-user.target" ];
-      serviceConfig = {
-        ExecStart = lib.getExe portForward;
-        Restart = "always";
-        RestartSec = 10;
-        DynamicUser = true;
-        NoNewPrivileges = true;
-        ProtectSystem = "strict";
-        ProtectHome = true;
-        PrivateTmp = true;
+      vpn-portforward = {
+        description = "VPN NAT-PMP port forwarding for qBittorrent";
+        after = [ "wg-quick-wg0.service" "qbittorrent.service" ];
+        partOf = [ "qbittorrent.service" ];
+        wants = [ "wg-quick-wg0.service" ];
+        wantedBy = [ "multi-user.target" ];
+        serviceConfig = {
+          ExecStart = lib.getExe portForward;
+          Restart = "always";
+          RestartSec = 10;
+          DynamicUser = true;
+          NoNewPrivileges = true;
+          ProtectSystem = "strict";
+          ProtectHome = true;
+          PrivateTmp = true;
+        };
+      };
+
+      clamav-daemon = {
+        serviceConfig = {
+          Restart = "always";
+          RestartSec = 10;
+        };
       };
     };
   };
