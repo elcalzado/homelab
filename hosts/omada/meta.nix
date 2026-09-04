@@ -1,4 +1,5 @@
 {
-  targets = [ "amd64-lxc" ];
-  channel = "stable";
+  targets = {
+    amd64-lxc.channel = "stable";
+  };
 }
