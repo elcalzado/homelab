@@ -84,7 +84,11 @@
         system = cfg.config.nixpkgs.hostPlatform.system;
       in
       {
-        hostname = (lib.head cfg.config.networking.interfaces.eth0.ipv4.addresses).address;
+        hostname =
+          let
+            interface = cfg.config.networking.defaultGateway.interface;
+          in
+          (lib.head cfg.config.networking.interfaces.${interface}.ipv4.addresses).address;
         sshUser = "deploy";
         autoRollback = true;
         magicRollback = true;
@@ -97,7 +101,7 @@
     nodes = lib.genAttrs hostNames (name:
       let
         meta = hostMeta.${name};
-        target = meta.defaultTarget or (lib.head meta.targets);
+        target = meta.defaultTarget or (lib.head (lib.attrNames meta.targets));
       in
       mkNode "${name}-${target}");
   in {

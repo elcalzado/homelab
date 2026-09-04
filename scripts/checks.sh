@@ -21,6 +21,11 @@ host_names() {
     --apply 'c: builtins.concatStringsSep "\n" (builtins.attrNames c)'
 }
 
+node_names() {
+  nix_ eval --raw '.#deploy.nodes' \
+    --apply 'c: builtins.concatStringsSep "\n" (builtins.attrNames c)'
+}
+
 # Emits the host list as JSON so CI can fan out one build job per host.
 system_of() {
   nix_ eval --raw ".#nixosConfigurations.\"$1\".config.nixpkgs.hostPlatform.system"
@@ -36,9 +41,18 @@ eval_hosts() {
   local name
   while IFS= read -r name; do
     [ -n "$name" ] || continue
-    echo "  eval $name"
+    echo "  eval host $name"
     nix_ eval --raw ".#nixosConfigurations.\"$name\".config.system.build.toplevel.drvPath" >/dev/null
   done <<< "$(host_names)"
+}
+
+eval_nodes() {
+  local name
+  while IFS= read -r name; do
+    [ -n "$name" ] || continue
+    echo "  eval node $name"
+    nix_ eval --raw ".#deploy.nodes.\"$name\".hostname" >/dev/null
+  done <<< "$(node_names)"
 }
 
 build_hosts() {
@@ -121,7 +135,8 @@ scan_secrets_history() {
 }
 
 case "${1:-all}" in
-  eval)            eval_hosts ;;
+  eval_hosts)      eval_hosts ;;
+  eval_nodes)      eval_nodes ;;
   build)           build_hosts "${@:2}" ;;
   list)            list_hosts ;;
   affected)        affected_hosts "${2:?base ref required}" ;;
