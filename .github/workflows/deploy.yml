@@ -19,6 +19,7 @@ on:
           - servarr
           - nextcloud
           - home-assistant
+          - mainsail
       mode:
         description: Preview only, or actually switch
         required: true
