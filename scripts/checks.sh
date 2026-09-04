@@ -144,6 +144,6 @@ case "${1:-all}" in
   shellcheck)      run_shellcheck ;;
   secrets)         scan_secrets ;;
   secrets-history) scan_secrets_history ;;
-  all)             eval_hosts; lint_nix; run_shellcheck; scan_secrets ;;
+  all)             eval_hosts; eval_nodes; lint_nix; run_shellcheck; scan_secrets ;;
   *)               echo "usage: $0 [eval|build [host]|list|lint|shellcheck|secrets|secrets-history|all]" >&2; exit 2 ;;
 esac
