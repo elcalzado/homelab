@@ -33,7 +33,7 @@
       lxc = [ ./modules/lxc.nix ];
       vm = [ ./modules/vm.nix ];
       pc = [ ./modules/pc.nix ];
-      pi = [ ./modules/pi.nix ];
+      rpi = [ ./modules/rpi.nix ];
     };
 
     targetSpecs = {
@@ -43,7 +43,7 @@
       arm64-lxc = { system = "aarch64-linux"; modules = platforms.lxc; };
       arm64-vm = { system = "aarch64-linux"; modules = platforms.vm; };
       arm64-pc = { system = "aarch64-linux"; modules = platforms.pc; };
-      arm64-pi = { system = "aarch64-linux"; modules = platforms.pi; };
+      arm64-rpi = { system = "aarch64-linux"; modules = platforms.rpi; };
     };
 
     hostNames = lib.filter

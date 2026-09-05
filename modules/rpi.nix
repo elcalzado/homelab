@@ -1,9 +1,9 @@
 { inputs, targetConfig, ... }:
 let
   profiles = {
-    pi-zero2w = [ ];
-    pi-4 = [ inputs.nixos-hardware.nixosModules.raspberry-pi-4 ];
-    pi-5 = [ inputs.nixos-hardware.nixosModules.raspberry-pi-5 ];
+    rpi-zero2w = [ ];
+    rpi-4 = [ inputs.nixos-hardware.nixosModules.raspberry-pi-4 ];
+    rpi-5 = [ inputs.nixos-hardware.nixosModules.raspberry-pi-5 ];
   };
 in
 {
