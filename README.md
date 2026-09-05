@@ -17,6 +17,8 @@ from one definition.
   - `disk.nix`     disk set up
   - `lxc.nix`      LXC platform adapter
   - `vm.nix`       VM platform adapter
+  - `pc.nix`       Bare metal platform adapter
+  - `rpi.nix`      Raspberry Pi platform adapter
   - `services/`    one file per service
 - `configs/`  per-service config templates (rendered by service modules)
 - `scripts/`  per-service helper scripts (embedded into modules)
