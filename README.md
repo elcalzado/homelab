@@ -31,6 +31,7 @@ from one definition.
 | Name           | Address       | Platform |
 |----------------|---------------|----------|
 | omada          | `10.0.10.2`   | LXC      |
+| mainsail       | `10.0.30.4`   | RPI      |
 | qbittorrent    | `10.0.30.5`   | VM       |
 | glance         | `10.0.30.6`   | LXC      |
 | jellyfin       | `10.0.30.7`   | VM       |

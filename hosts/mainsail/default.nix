@@ -17,20 +17,17 @@
     wireless = {
       enable = true;
       secretsFile = config.sops.templates."wireless.conf".path;
+      networks."Lassie".pskRaw = "ext:psk";
     };
   };
 
   sops = {
     defaultSopsFile = ../../secrets/mainsail.yaml;
 
-    secrets."wireless/ssid" = { };
     secrets."wireless/psk" = { };
 
     templates."wireless.conf".content = ''
-        network={
-        ssid="${config.sops.placeholder."wireless/ssid"}"
-        psk="${config.sops.placeholder."wireless/psk"}"
-        }
+      psk=${config.sops.placeholder."wireless/psk"}
     '';
   };
 
