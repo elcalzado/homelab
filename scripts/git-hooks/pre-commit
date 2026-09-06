@@ -5,3 +5,4 @@ checks="$(git rev-parse --show-toplevel)/scripts/checks.sh"
 "$checks" lint
 "$checks" shellcheck
 "$checks" secrets
+"$(git rev-parse --show-toplevel)/scripts/check-ssh-keys.sh"
