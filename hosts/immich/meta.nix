@@ -1,4 +1,5 @@
 {
-  targets = [ "amd64-vm" ];
-  channel = "unstable";
+  targets = {
+    amd64-vm.channel = "unstable";
+  };
 }

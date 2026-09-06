@@ -10,6 +10,8 @@
     disko.inputs.nixpkgs.follows = "nixpkgs";
     deploy-rs.url = "github:serokell/deploy-rs";
     deploy-rs.inputs.nixpkgs.follows = "nixpkgs";
+    nixos-hardware.url = "github:NixOS/nixos-hardware";
+    nixos-hardware.inputs.nixpkgs.follows = "nixpkgs-unstable";
   };
 
   outputs = { nixpkgs, nixpkgs-unstable, deploy-rs, ... }@inputs:
@@ -21,22 +23,27 @@
       unstable = nixpkgs-unstable;
     };
 
-    mkSystem = channel: system: modules:
+    mkSystem = channel: system: modules: targetConfig:
       channel.lib.nixosSystem {
         modules = modules ++ [ { nixpkgs.hostPlatform = system; } ];
-        specialArgs = { inherit inputs; };
+        specialArgs = { inherit inputs targetConfig; };
       };
 
     platforms = {
       lxc = [ ./modules/lxc.nix ];
       vm = [ ./modules/vm.nix ];
+      pc = [ ./modules/pc.nix ];
+      rpi = [ ./modules/rpi.nix ];
     };
 
     targetSpecs = {
       amd64-lxc = { system = "x86_64-linux"; modules = platforms.lxc; };
       amd64-vm = { system = "x86_64-linux"; modules = platforms.vm; };
+      amd64-pc = { system = "x86_64-linux"; modules = platforms.pc; };
       arm64-lxc = { system = "aarch64-linux"; modules = platforms.lxc; };
       arm64-vm = { system = "aarch64-linux"; modules = platforms.vm; };
+      arm64-pc = { system = "aarch64-linux"; modules = platforms.pc; };
+      arm64-rpi = { system = "aarch64-linux"; modules = platforms.rpi; };
     };
 
     hostNames = lib.filter
@@ -56,13 +63,18 @@
     mkHost = name:
       let
         meta = hostMeta.${name};
-        channel = channels.${meta.channel};
       in
-      lib.listToAttrs (map
-        (target: lib.nameValuePair "${name}-${target}"
-          (mkSystem channel targetSpecs.${target}.system
-            ([ ./hosts/${name} ] ++ targetSpecs.${target}.modules)))
-        meta.targets);
+      lib.mapAttrs'
+        (target: targetConfig:
+          let
+            spec = targetSpecs.${target};
+          in
+          lib.nameValuePair
+            "${name}-${target}"
+            (mkSystem channels.${targetConfig.channel} spec.system
+              ([ ./hosts/${name} ] ++ spec.modules)
+              targetConfig))
+        meta.targets;
 
     hosts = lib.foldl' (acc: name: acc // mkHost name) {} hostNames;
 
@@ -72,7 +84,11 @@
         system = cfg.config.nixpkgs.hostPlatform.system;
       in
       {
-        hostname = (lib.head cfg.config.networking.interfaces.eth0.ipv4.addresses).address;
+        hostname =
+          let
+            interface = cfg.config.networking.defaultGateway.interface;
+          in
+          (lib.head cfg.config.networking.interfaces.${interface}.ipv4.addresses).address;
         sshUser = "deploy";
         autoRollback = true;
         magicRollback = true;
@@ -85,7 +101,7 @@
     nodes = lib.genAttrs hostNames (name:
       let
         meta = hostMeta.${name};
-        target = meta.defaultTarget or (lib.head meta.targets);
+        target = meta.defaultTarget or (lib.head (lib.attrNames meta.targets));
       in
       mkNode "${name}-${target}");
   in {
