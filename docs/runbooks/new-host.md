@@ -27,6 +27,13 @@ Identity + which modules it pulls in. No platform details.
 }
 ```
 
+If this service will perform backups to the NAS, use the following command to populate
+the SSH private key:
+
+```bash
+sops set secrets/mainsail.yaml   '["backup"]["sshKey"]'   "$(jq -Rs . < /path/to/key)"
+```
+
 **Commit + push:**
 
 ```bash
