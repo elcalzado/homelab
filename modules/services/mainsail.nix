@@ -24,4 +24,6 @@ in
     at = "00:30";
     trees = [ klipperDir moonrakerDir ];
   };
+
+  networking.firewall.allowedTCPPorts = [ 80 ];
 }
