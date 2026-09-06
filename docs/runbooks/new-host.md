@@ -78,7 +78,7 @@ ssh-copy-id root@<host-ip>
 
 nix run --extra-experimental-features 'nix-command flakes' \
   nixpkgs#nixos-rebuild-ng -- switch \
-  --flake .#<name>-amd64-lxc \
+  --flake .#<host>-amd64-lxc \
   --target-host root@<host-ip>
 ```
 
@@ -86,7 +86,7 @@ Jump to Step 3.
 
 ---
 
-## Step 2 (VM / baremetal) — Provision + first deploy
+## Step 2 (VM) — Provision + first deploy
 
 ### 2a. Create the VM
 
@@ -99,10 +99,10 @@ VLAN 30 has no DHCP, so give the live installer an address and a way in, in the
 VM console:
 
 ```bash
-ip addr add 10.0.30.<x>/26 dev ens18      # any free IP; check the NIC with `ip link`
-ip route add default via 10.0.30.1
-echo "nameserver 10.0.30.1" | tee /etc/resolv.conf
-passwd root                               # set a temp root password
+sudo passwd root && su                    # set a temp root password
+ip addr add <host-ip>/<cidr> dev ens18    # any free IP; check the NIC with `ip link`
+ip route add default via <gateway>
+echo "nameserver <nameserver>" | tee /etc/resolv.conf
 ```
 
 ### 2c. Install from your workstation
@@ -119,14 +119,84 @@ The following command partitions the disk, installs the whole config, and reboot
 ```bash
 nix run --extra-experimental-features "nix-command flakes"  \
   github:nix-community/nixos-anywhere --                    \
-  --flake .#<name>-amd64-vm                                 \
+  --flake .#<host>-amd64-vm                                 \
   --build-on remote                                         \
   --extra-files /tmp/extra                                  \
-  root@10.0.30.<x>
+  root@<host-ip>
 ```
 
-**Bare metal:** identical, plus set `disko.devices.disk.main.device` in
-`hosts/<name>/default.nix` if the disk isn't `/dev/sda` (e.g. `/dev/nvme0n1`).
+Jump to Step 3
+
+---
+
+## Step 2 (Raspberry Pi) — Provision + first deploy
+
+If this is being done on the Raspberry Pi with no Ethernet, a temporary SSID and
+PSK must be used alongside a temporary admin user (`guster`) password to avoid
+leaking any secrets.
+
+It's a chicken and the egg situation where we need the network to install the age key but
+the target needs the age key to decrypt the secrets and connect to the network. This can also be solved
+using serial console but for me, that's more work than using a temporary WLAN.
+
+### 2a. Fill in temporary details
+
+For wireless targets create your temporary WLAN and place its information in the host's
+`default.nix`:
+
+```nix
+networking.wireless.networks."<your-ssid>".psk = "<your-psk>";
+```
+
+Set a temporary `hashedPassword` for `guster` and comment out the `hashedPasswordFile`:
+
+```nix
+# hashedPasswordFile = config.sops.secrets."guster/passwordHash".path;
+hashedPassword = "<your-hash>";
+```
+
+This is needed regardless of the target being wired or wireless since you'll need `sudo` to install
+`/var/lib/sops-nix/key.txt`.
+
+### 2b. Flash the image to the SD card
+
+Create an SD image:
+
+```bash
+nix run --extra-experimental-features 'nix-command flakes' \
+  nixpkgs#nixos-rebuild-ng -- build-image \
+  --flake .#<host>-arm64-rpi \
+  --image-variant sd-card
+```
+
+Flash the image to your SD card:
+
+```bash
+sudo dd if=result/sd-image/nixos-image-sd-card-*-aarch64-linux.img of=/dev/sdX bs=4096 conv=fsync status=progress
+```
+
+Make sure to revert the temporary changes made in step 2a.
+
+### 2c. Make the installer reachable
+
+Access the target over SSH and install `key.txt`:
+
+```bash
+ssh guster@<host>.home.arpa
+
+sudo install -d -m700 /var/lib/sops-nix
+cat | sudo tee /var/lib/sops-nix/key.txt           # paste key, then Ctrl-D
+sudo chmod 600 /var/lib/sops-nix/key.txt
+```
+
+### 2d. Install from your workstation
+
+```bash
+nix run --extra-experimental-features 'nix-command flakes' \
+  nixpkgs#nixos-rebuild-ng -- switch \
+  --flake .#<host>-arm64-rpi \
+  --target-host guster@<host>.home.arpa --sudo --ask-sudo-password
+```
 
 Jump to Step 3
 
@@ -134,25 +204,19 @@ Jump to Step 3
 
 ## Step 3 — Add it to the deploy pipeline
 
-**1.** Add a node to `deploy.nodes` in `flake.nix`:
-
-```nix
-<name> = mkNode "<name>-amd64-vm";     # or -amd64-lxc
-```
-
-**2.** Add `<name>` to the `host` dropdown in `.github/workflows/deploy.yml`
+**1.** Add `<name>` to the `host` dropdown in `.github/workflows/deploy.yml`
 and `.github/workflows/rollback.yml`.
 
-**3.** Add the host to `docs/network.md` and the README table.
+**2.** Add the host to `docs/network.md` and the README table.
 
-Commit and push, then deploy from Actions → **deploy** → `dry-activate`,
+Commit and push, then deploy from `Actions` → `deploy` → `dry-activate`,
 then `switch`.
 
 ---
 
 ## Step 4 — Steady state
 
-Actions → **deploy** → pick host → `switch`. See [updating.md](updating.md).
+`Actions` → `deploy` → _pick host_ → `switch`. See [updating.md](updating.md).
 
 ...or...
 
@@ -160,7 +224,7 @@ From workstation (builds on builder):
 ```bash
 nix run --extra-experimental-features 'nix-command flakes' \
   nixpkgs#nixos-rebuild-ng -- switch \
-  --flake .#<name>-<arch>-<platform> \
+  --flake .#<host>-<arch>-<platform> \
   --target-host guster@<host>.home.arpa --sudo --ask-sudo-password
 ```
 
