@@ -4,6 +4,7 @@ result-*
 
 # direnv / editor noise
 .direnv/
+.envrc
 *.swp
 .DS_Store
 

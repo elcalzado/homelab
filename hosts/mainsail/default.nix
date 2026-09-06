@@ -26,9 +26,13 @@
 
     secrets."wireless/psk" = { };
 
-    templates."wireless.conf".content = ''
-      psk=${config.sops.placeholder."wireless/psk"}
-    '';
+    templates."wireless.conf" = {
+      content = ''
+        psk=${config.sops.placeholder."wireless/psk"}
+      '';
+      owner = "wpa_supplicant";
+      group = "wpa_supplicant";
+    };
   };
 
   system.stateVersion = "26.05";
