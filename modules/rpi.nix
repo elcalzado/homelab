@@ -1,4 +1,9 @@
-{ inputs, lib, targetConfig, ... }:
+{
+  inputs,
+  lib,
+  targetConfig,
+  ...
+}:
 let
   profiles = {
     rpi-zero2w = [ ];
@@ -22,30 +27,35 @@ in
     fsType = "ext4";
   };
 
-  hardware.deviceTree.overlays =
-    lib.optionals (board == "rpi-zero2w" && usbMode != null) [
-      {
-        name = "dwc2-mode";
-        dtsText = ''
-          /dts-v1/;
-          /plugin/;
+  hardware.deviceTree.overlays = lib.optionals (board == "rpi-zero2w" && usbMode != null) [
+    {
+      name = "dwc2-mode";
+      dtsText = ''
+        /dts-v1/;
+        /plugin/;
 
-          / {
-            compatible = "raspberrypi,model-zero-2-w", "brcm,bcm2837";
-          };
+        / {
+          compatible = "raspberrypi,model-zero-2-w", "brcm,bcm2837";
+        };
 
-          &{/soc/usb@7e980000} {
-            dr_mode = "${usbMode}";
-          };
-        '';
-      }
-    ];
-    # Future overlays can be added here with their own conditions
-    # ++ lib.optionals (board == "some" && someOtherFlag) [ ... ]
+        &{/soc/usb@7e980000} {
+          dr_mode = "${usbMode}";
+        };
+      '';
+    }
+  ];
+  # Future overlays can be added here with their own conditions
+  # ++ lib.optionals (board == "some" && someOtherFlag) [ ... ]
 
   assertions = [
     {
-      assertion = usbMode == null || builtins.elem usbMode [ "host" "otg" "peripheral" ];
+      assertion =
+        usbMode == null
+        || builtins.elem usbMode [
+          "host"
+          "otg"
+          "peripheral"
+        ];
       message = "usbMode must be one of \"host\", \"otg\", or \"peripheral\" (got: ${toString usbMode})";
     }
     {

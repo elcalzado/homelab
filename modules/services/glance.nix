@@ -1,5 +1,4 @@
-_:
-{
+_: {
   services.glance = {
     enable = true;
     openFirewall = true;
@@ -16,14 +15,24 @@ _:
               size = "small";
               widgets = [
                 { type = "calendar"; }
-                { type = "weather"; location = "Orlando, Florida, United States"; units = "imperial"; }
+                {
+                  type = "weather";
+                  location = "Orlando, Florida, United States";
+                  units = "imperial";
+                }
               ];
             }
             {
               size = "full";
               widgets = [
                 { type = "hacker-news"; }
-                { type = "releases"; repositories = [ "glanceapp/glance" "NixOS/nixpkgs" ]; }
+                {
+                  type = "releases";
+                  repositories = [
+                    "glanceapp/glance"
+                    "NixOS/nixpkgs"
+                  ];
+                }
               ];
             }
           ];

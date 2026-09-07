@@ -1,4 +1,10 @@
-{ config, lib, pkgs, inputs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  inputs,
+  ...
+}:
 
 let
   gusterUid = 1000;
@@ -10,8 +16,14 @@ in
   ];
 
   nix.settings = {
-    experimental-features = [ "nix-command" "flakes" ];
-    trusted-users = [ "guster" "deploy" ];
+    experimental-features = [
+      "nix-command"
+      "flakes"
+    ];
+    trusted-users = [
+      "guster"
+      "deploy"
+    ];
   };
 
   services.openssh = {
@@ -30,7 +42,12 @@ in
     extraRules = [
       {
         users = [ "deploy" ];
-        commands = [ { command = "ALL"; options = [ "NOPASSWD" ]; } ];
+        commands = [
+          {
+            command = "ALL";
+            options = [ "NOPASSWD" ];
+          }
+        ];
       }
     ];
   };
@@ -76,5 +93,9 @@ in
 
   time.timeZone = "America/New_York";
 
-  environment.systemPackages = with pkgs; [ git vim rsync ];
+  environment.systemPackages = with pkgs; [
+    git
+    vim
+    rsync
+  ];
 }

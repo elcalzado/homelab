@@ -23,11 +23,20 @@
           { name = "Bluray-2160p"; }
           {
             name = "WEB-2160p";
-            qualities = [ "WEBDL-2160p" "WEBRip-2160p" ];
+            qualities = [
+              "WEBDL-2160p"
+              "WEBRip-2160p"
+            ];
           }
           {
             name = "Bluray|WEB-1080p";
-            qualities = [ "Bluray-1080p" "WEBDL-1080p" "WEBRip-1080p" "WEBDL-720p" "WEBRip-720p" ];
+            qualities = [
+              "Bluray-1080p"
+              "WEBDL-1080p"
+              "WEBRip-1080p"
+              "WEBDL-720p"
+              "WEBRip-720p"
+            ];
           }
           { name = "Bluray-720p"; }
         ];
@@ -102,7 +111,12 @@
           "e36a0ba1bc902b26ee40818a1d59b8bd" # PMTP
           "c2863d2a50c9acad1fb50e53ece60817" # STAN
         ];
-        assign_scores_to = [ { name = "SQP-1 (2160p)"; score = 0; } ];
+        assign_scores_to = [
+          {
+            name = "SQP-1 (2160p)";
+            score = 0;
+          }
+        ];
       }
       {
         # Hard-block SDR at 2160p
@@ -133,18 +147,27 @@
         qualities = [
           {
             name = "WEB 2160p";
-            qualities = [ "WEBDL-2160p" "WEBRip-2160p" ];
+            qualities = [
+              "WEBDL-2160p"
+              "WEBRip-2160p"
+            ];
           }
           {
             name = "WEB 1080p";
-            qualities = [ "WEBDL-1080p" "WEBRip-1080p" ];
+            qualities = [
+              "WEBDL-1080p"
+              "WEBRip-1080p"
+            ];
           }
           { name = "Bluray-2160p"; }
           { name = "Bluray-1080p"; }
           { name = "HDTV-1080p"; }
           {
             name = "WEB 720p";
-            qualities = [ "WEBDL-720p" "WEBRip-720p" ];
+            qualities = [
+              "WEBDL-720p"
+              "WEBRip-720p"
+            ];
           }
           { name = "Bluray-720p"; }
           { name = "HDTV-720p"; }
@@ -164,26 +187,43 @@
         qualities = [
           {
             name = "WEB 2160p";
-            qualities = [ "WEBDL-2160p" "WEBRip-2160p" ];
+            qualities = [
+              "WEBDL-2160p"
+              "WEBRip-2160p"
+            ];
           }
           { name = "Bluray-2160p"; }
           {
             name = "Bluray-1080p";
-            qualities = [ "Bluray-1080p Remux" "Bluray-1080p" ];
+            qualities = [
+              "Bluray-1080p Remux"
+              "Bluray-1080p"
+            ];
           }
           {
             name = "WEB 1080p";
-            qualities = [ "WEBDL-1080p" "WEBRip-1080p" "HDTV-1080p" ];
+            qualities = [
+              "WEBDL-1080p"
+              "WEBRip-1080p"
+              "HDTV-1080p"
+            ];
           }
           { name = "Bluray-720p"; }
           {
             name = "WEB 720p";
-            qualities = [ "WEBDL-720p" "WEBRip-720p" "HDTV-720p" ];
+            qualities = [
+              "WEBDL-720p"
+              "WEBRip-720p"
+              "HDTV-720p"
+            ];
           }
           { name = "Bluray-480p"; }
           {
             name = "WEB 480p";
-            qualities = [ "WEBDL-480p" "WEBRip-480p" ];
+            qualities = [
+              "WEBDL-480p"
+              "WEBRip-480p"
+            ];
           }
           { name = "DVD"; }
           { name = "SDTV"; }
@@ -275,15 +315,30 @@
       }
       {
         trash_ids = [ "418f50b10f1907201b6cfdf881f467b7" ]; # Anime Dual Audio
-        assign_scores_to = [ { name = "Anime"; score = 300; } ];
+        assign_scores_to = [
+          {
+            name = "Anime";
+            score = 300;
+          }
+        ];
       }
       {
         trash_ids = [ "026d5aadd1a6b4e550b134cb6c72b3ca" ]; # Uncensored
-        assign_scores_to = [ { name = "Anime"; score = 100; } ];
+        assign_scores_to = [
+          {
+            name = "Anime";
+            score = 100;
+          }
+        ];
       }
       {
         trash_ids = [ "b2550eb333d27b75833e25b8c2557b38" ]; # 10bit
-        assign_scores_to = [ { name = "Anime"; score = 50; } ];
+        assign_scores_to = [
+          {
+            name = "Anime";
+            score = 50;
+          }
+        ];
       }
     ];
   };

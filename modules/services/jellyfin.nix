@@ -13,8 +13,16 @@ in
 
   homelab.backup.jobs.jellyfin = {
     at = "01:40";
-    databases = [ { engine = "sqlite"; path = "${dataDir}/data/jellyfin.db"; } ];
-    trees = [ configDir "${dataDir}/plugins" ];
+    databases = [
+      {
+        engine = "sqlite";
+        path = "${dataDir}/data/jellyfin.db";
+      }
+    ];
+    trees = [
+      configDir
+      "${dataDir}/plugins"
+    ];
     mayBeEmpty = [ "${dataDir}/plugins" ];
   };
 

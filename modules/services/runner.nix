@@ -1,4 +1,10 @@
-{ config, inputs, lib, pkgs, ... }:
+{
+  config,
+  inputs,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   cfg = config.homelab.runner;
@@ -91,10 +97,17 @@ in
           hostName = cfg.builder.host;
           sshUser = "nixbuilder";
           sshKey = config.sops.secrets."builder/sshKey".path;
-          systems = [ "x86_64-linux" "aarch64-linux" ];
+          systems = [
+            "x86_64-linux"
+            "aarch64-linux"
+          ];
           inherit (cfg.builder) maxJobs;
           speedFactor = 1;
-          supportedFeatures = [ "big-parallel" "kvm" "nixos-test" ];
+          supportedFeatures = [
+            "big-parallel"
+            "kvm"
+            "nixos-test"
+          ];
         }
       ];
     };

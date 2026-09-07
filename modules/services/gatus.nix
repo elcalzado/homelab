@@ -15,17 +15,41 @@ let
   ];
 
   web =
-    { name, group, url, insecure ? false }:
     {
-      inherit name group url interval alerts;
-      conditions = [ "[STATUS] < 400" "[RESPONSE_TIME] < ${toString slowMillis}" ];
+      name,
+      group,
+      url,
+      insecure ? false,
+    }:
+    {
+      inherit
+        name
+        group
+        url
+        interval
+        alerts
+        ;
+      conditions = [
+        "[STATUS] < 400"
+        "[RESPONSE_TIME] < ${toString slowMillis}"
+      ];
     }
     // lib.optionalAttrs insecure { client.insecure = true; };
 
   listening =
-    { name, group, host, port }:
     {
-      inherit name group interval alerts;
+      name,
+      group,
+      host,
+      port,
+    }:
+    {
+      inherit
+        name
+        group
+        interval
+        alerts
+        ;
       url = "tcp://${host}:${toString port}";
       conditions = [ "[CONNECTED] == true" ];
     };
@@ -65,35 +89,119 @@ in
       };
 
       endpoints = [
-        (web { name = "jellyfin"; group = "media"; url = "http://jellyfin.home.arpa:8096/health"; })
-        (web { name = "sonarr"; group = "media"; url = "http://servarr.home.arpa:8989/ping"; })
-        (web { name = "radarr"; group = "media"; url = "http://servarr.home.arpa:7878/ping"; })
-        (web { name = "prowlarr"; group = "media"; url = "http://servarr.home.arpa:9696/ping"; })
-        (web { name = "bazarr"; group = "media"; url = "http://servarr.home.arpa:6767"; })
-        (web { name = "seerr"; group = "media"; url = "http://servarr.home.arpa:5055"; })
-        (web { name = "qbittorrent"; group = "media"; url = "http://qbittorrent.home.arpa:8080"; })
+        (web {
+          name = "jellyfin";
+          group = "media";
+          url = "http://jellyfin.home.arpa:8096/health";
+        })
+        (web {
+          name = "sonarr";
+          group = "media";
+          url = "http://servarr.home.arpa:8989/ping";
+        })
+        (web {
+          name = "radarr";
+          group = "media";
+          url = "http://servarr.home.arpa:7878/ping";
+        })
+        (web {
+          name = "prowlarr";
+          group = "media";
+          url = "http://servarr.home.arpa:9696/ping";
+        })
+        (web {
+          name = "bazarr";
+          group = "media";
+          url = "http://servarr.home.arpa:6767";
+        })
+        (web {
+          name = "seerr";
+          group = "media";
+          url = "http://servarr.home.arpa:5055";
+        })
+        (web {
+          name = "qbittorrent";
+          group = "media";
+          url = "http://qbittorrent.home.arpa:8080";
+        })
 
-        (web { name = "immich"; group = "photos"; url = "http://immich.home.arpa:2283/api/server/ping"; })
+        (web {
+          name = "immich";
+          group = "photos";
+          url = "http://immich.home.arpa:2283/api/server/ping";
+        })
 
-        (web { name = "nextcloud"; group = "documents"; url = "https://nextcloud.home.arpa"; })
+        (web {
+          name = "nextcloud";
+          group = "documents";
+          url = "https://nextcloud.home.arpa";
+        })
 
-        (web { name = "glance"; group = "management"; url = "http://glance.home.arpa:8080"; })
-        (web { name = "portainer"; group = "management"; url = "https://portainer.home.arpa:9443"; insecure = true; })
-        (web { name = "home-assistant"; group = "management"; url = "http://hass.home.arpa:8123"; })
+        (web {
+          name = "glance";
+          group = "management";
+          url = "http://glance.home.arpa:8080";
+        })
+        (web {
+          name = "portainer";
+          group = "management";
+          url = "https://portainer.home.arpa:9443";
+          insecure = true;
+        })
+        (web {
+          name = "home-assistant";
+          group = "management";
+          url = "http://hass.home.arpa:8123";
+        })
 
-        (web { name = "pve1"; group = "infrastructure"; url = "https://pve1.home.arpa:8006"; insecure = true; })
-        (web { name = "pve2"; group = "infrastructure"; url = "https://pve2.home.arpa:8006"; insecure = true; })
-        (web { name = "pve3"; group = "infrastructure"; url = "https://pve3.home.arpa:8006"; insecure = true; })
+        (web {
+          name = "pve1";
+          group = "infrastructure";
+          url = "https://pve1.home.arpa:8006";
+          insecure = true;
+        })
+        (web {
+          name = "pve2";
+          group = "infrastructure";
+          url = "https://pve2.home.arpa:8006";
+          insecure = true;
+        })
+        (web {
+          name = "pve3";
+          group = "infrastructure";
+          url = "https://pve3.home.arpa:8006";
+          insecure = true;
+        })
 
-        (web { name = "truenas"; group = "infrastructure"; url = "https://truenas.home.arpa"; insecure = true; })
-        (listening { name = "runner"; group = "infrastructure"; host = "runner.home.arpa"; port = 22; })
-        (listening { name = "builder"; group = "infrastructure"; host = "builder.home.arpa"; port = 22; })
+        (web {
+          name = "truenas";
+          group = "infrastructure";
+          url = "https://truenas.home.arpa";
+          insecure = true;
+        })
+        (listening {
+          name = "runner";
+          group = "infrastructure";
+          host = "runner.home.arpa";
+          port = 22;
+        })
+        (listening {
+          name = "builder";
+          group = "infrastructure";
+          host = "builder.home.arpa";
+          port = 22;
+        })
       ];
     };
   };
 
   homelab.backup.jobs.gatus = {
     at = "00:40";
-    databases = [ { engine = "sqlite"; path = "/var/lib/private/gatus/data.db"; } ];
+    databases = [
+      {
+        engine = "sqlite";
+        path = "/var/lib/private/gatus/data.db";
+      }
+    ];
   };
 }

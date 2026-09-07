@@ -1,32 +1,40 @@
-{ config, pkgs, lib, ... }:
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}:
 
 let
   lanInterface = "eth0";
-  lanNet       = "10.0.30.0/26";
-  lanGateway   = "10.0.30.1";
-  mgmtNet      = "10.0.100.0/28";
+  lanNet = "10.0.30.0/26";
+  lanGateway = "10.0.30.1";
+  mgmtNet = "10.0.100.0/28";
 
   wgAddress = "10.2.0.2/32";
-  wgDns     = "10.2.0.1";
+  wgDns = "10.2.0.1";
 
-  vpnPublicKey    = "D7+AG9clQ1F/6uaY8apeoKDOKAD7p6tf65dFIVLGsHg=";
-  vpnEndpointIp   = "149.102.224.162";
+  vpnPublicKey = "D7+AG9clQ1F/6uaY8apeoKDOKAD7p6tf65dFIVLGsHg=";
+  vpnEndpointIp = "149.102.224.162";
   vpnEndpointPort = 51820;
 
   mountDir = "/mnt/entertainment";
-  saveDir  = "${mountDir}/torrents";
-  tempDir  = "${saveDir}/temp";
+  saveDir = "${mountDir}/torrents";
+  tempDir = "${saveDir}/temp";
   webuiPort = 8080;
 
   profileDir = "/var/lib/qbittorrent";
-  configDir  = "${profileDir}/qBittorrent/config";
-  resumeDir  = "${profileDir}/qBittorrent/data/BT_backup";
+  configDir = "${profileDir}/qBittorrent/config";
+  resumeDir = "${profileDir}/qBittorrent/data/BT_backup";
   configFile = "${configDir}/qBittorrent.conf";
-  scanLog  = "/var/log/qbittorrent/clamav_scan.log";
+  scanLog = "/var/log/qbittorrent/clamav_scan.log";
 
   clamavScan = pkgs.writeShellApplication {
     name = "clamav_scan";
-    runtimeInputs = [ pkgs.clamav pkgs.coreutils ];
+    runtimeInputs = [
+      pkgs.clamav
+      pkgs.coreutils
+    ];
     text = ''
       SCAN_LOG=${lib.escapeShellArg scanLog}
       ${builtins.readFile ../../scripts/qbittorrent/clamav_scan.sh}
@@ -35,7 +43,12 @@ let
 
   portForward = pkgs.writeShellApplication {
     name = "vpn-portforward";
-    runtimeInputs = [ pkgs.libnatpmp pkgs.curl pkgs.gnused pkgs.coreutils ];
+    runtimeInputs = [
+      pkgs.libnatpmp
+      pkgs.curl
+      pkgs.gnused
+      pkgs.coreutils
+    ];
     text = ''
       GATEWAY=${lib.escapeShellArg wgDns}
       WEBUI_PORT=${toString webuiPort}
@@ -45,13 +58,15 @@ let
 
   # Declarative qBittorrent.conf, rendered from configs/qbittorrent/qBittorrent.conf
   # with @TOKENS@ substituted.
-  qbtConfBody = builtins.replaceStrings
-    [ "@CLAMAV_SCAN@" "@SAVE_DIR@" "@TEMP_DIR@" ]
-    [ (lib.getExe clamavScan) saveDir tempDir ]
-    (builtins.readFile ../../configs/qbittorrent/qBittorrent.conf);
+  qbtConfBody =
+    builtins.replaceStrings
+      [ "@CLAMAV_SCAN@" "@SAVE_DIR@" "@TEMP_DIR@" ]
+      [ (lib.getExe clamavScan) saveDir tempDir ]
+      (builtins.readFile ../../configs/qbittorrent/qBittorrent.conf);
   # Guarantee a trailing newline so the WebUI password hash has its own line
-  qbtConfBase = pkgs.writeText "qBittorrent.conf"
-    (qbtConfBody + lib.optionalString (!lib.hasSuffix "\n" qbtConfBody) "\n");
+  qbtConfBase = pkgs.writeText "qBittorrent.conf" (
+    qbtConfBody + lib.optionalString (!lib.hasSuffix "\n" qbtConfBody) "\n"
+  );
 in
 {
   services = {
@@ -66,7 +81,7 @@ in
 
     dnsmasq = {
       enable = true;
-      resolveLocalQueries = true;      # point the system resolver at 127.0.0.1
+      resolveLocalQueries = true; # point the system resolver at 127.0.0.1
       settings = {
         no-resolv = true;
         bind-interfaces = true;
@@ -99,8 +114,14 @@ in
 
   homelab.backup.jobs.qbittorrent = {
     at = "02:50";
-    trees = [ resumeDir configDir ];
-    excludes = [ "qBittorrent.conf" "lockfile" ];
+    trees = [
+      resumeDir
+      configDir
+    ];
+    excludes = [
+      "qBittorrent.conf"
+      "lockfile"
+    ];
   };
 
   systemd = {
@@ -117,21 +138,31 @@ in
           UMask = "0002";
         };
         unitConfig.RequiresMountsFor = [ mountDir ];
-        after = [ "wg-quick-wg0.service" "clamav-daemon.service" ];
+        after = [
+          "wg-quick-wg0.service"
+          "clamav-daemon.service"
+        ];
         bindsTo = [ "clamav-daemon.service" ];
         # Rewrite the config authoritatively on every start, then append the WebUI
         # password hash and API key from the sops secrets.
         restartTriggers = [ qbtConfBase ];
         preStart = ''
           ${pkgs.coreutils}/bin/install -m600 ${qbtConfBase} ${configFile}
-          printf 'WebUI\\Password_PBKDF2=%s\n' "$(${pkgs.coreutils}/bin/cat ${config.sops.secrets."webui/passwordHash".path})" >> ${configFile}
-          printf 'WebUI\\APIKey=%s\n' "$(${pkgs.coreutils}/bin/cat ${config.sops.secrets."webui/apiKey".path})" >> ${configFile}
+          printf 'WebUI\\Password_PBKDF2=%s\n' "$(${pkgs.coreutils}/bin/cat ${
+            config.sops.secrets."webui/passwordHash".path
+          })" >> ${configFile}
+          printf 'WebUI\\APIKey=%s\n' "$(${pkgs.coreutils}/bin/cat ${
+            config.sops.secrets."webui/apiKey".path
+          })" >> ${configFile}
         '';
       };
 
       vpn-portforward = {
         description = "VPN NAT-PMP port forwarding for qBittorrent";
-        after = [ "wg-quick-wg0.service" "qbittorrent.service" ];
+        after = [
+          "wg-quick-wg0.service"
+          "qbittorrent.service"
+        ];
         partOf = [ "qbittorrent.service" ];
         wants = [ "wg-quick-wg0.service" ];
         wantedBy = [ "multi-user.target" ];
@@ -167,12 +198,14 @@ in
       preDown = [
         "${pkgs.iproute2}/bin/ip route del ${mgmtNet}"
       ];
-      peers = [{
-        publicKey = vpnPublicKey;
-        allowedIPs = [ "0.0.0.0/0" ];
-        endpoint = "${vpnEndpointIp}:${toString vpnEndpointPort}";
-        persistentKeepalive = 25;
-      }];
+      peers = [
+        {
+          publicKey = vpnPublicKey;
+          allowedIPs = [ "0.0.0.0/0" ];
+          endpoint = "${vpnEndpointIp}:${toString vpnEndpointPort}";
+          persistentKeepalive = 25;
+        }
+      ];
     };
 
     firewall.enable = false;
@@ -217,5 +250,9 @@ in
     };
   };
 
-  environment.systemPackages = [ clamavScan pkgs.wireguard-tools pkgs.libnatpmp ];
+  environment.systemPackages = [
+    clamavScan
+    pkgs.wireguard-tools
+    pkgs.libnatpmp
+  ];
 }

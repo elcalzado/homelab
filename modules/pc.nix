@@ -12,8 +12,15 @@ in
     loader.efi.canTouchEfiVariables = true;
 
     initrd.availableKernelModules = [
-      "ahci" "xhci_pci" "virtio_pci" "virtio_scsi"
-      "virtio_blk" "sd_mod" "sr_mod" "nvme" "usbhid"
+      "ahci"
+      "xhci_pci"
+      "virtio_pci"
+      "virtio_scsi"
+      "virtio_blk"
+      "sd_mod"
+      "sr_mod"
+      "nvme"
+      "usbhid"
     ];
   };
 

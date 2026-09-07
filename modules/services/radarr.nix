@@ -13,7 +13,12 @@ in
 
   homelab.backup.jobs.radarr = {
     at = "02:10";
-    databases = [ { engine = "sqlite"; path = "${dataDir}/radarr.db"; } ];
+    databases = [
+      {
+        engine = "sqlite";
+        path = "${dataDir}/radarr.db";
+      }
+    ];
     files = [ "${dataDir}/config.xml" ];
   };
 

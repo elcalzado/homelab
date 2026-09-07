@@ -1,5 +1,4 @@
-_:
-{
+_: {
   imports = [
     ../../modules/common.nix
     ../../modules/services/runner.nix
@@ -17,9 +16,15 @@ _:
     hostName = "runner";
     usePredictableInterfaceNames = false;
     interfaces.eth0.ipv4.addresses = [
-      { address = "10.0.30.12"; prefixLength = 26; }
+      {
+        address = "10.0.30.12";
+        prefixLength = 26;
+      }
     ];
-    defaultGateway = { address = "10.0.30.1"; interface = "eth0"; };
+    defaultGateway = {
+      address = "10.0.30.1";
+      interface = "eth0";
+    };
     nameservers = [ "10.0.30.1" ];
   };
 

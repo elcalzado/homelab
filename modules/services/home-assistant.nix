@@ -17,7 +17,7 @@ in
       "isal"
     ];
     config = {
-      default_config = {};
+      default_config = { };
       homeassistant = {
         latitude = "!secret latitude";
         longitude = "!secret longitude";
@@ -37,15 +37,22 @@ in
   services.postgresql = {
     enable = true;
     ensureDatabases = [ "hass" ];
-    ensureUsers = [{
-      name = "hass";
-      ensureDBOwnership = true;
-    }];
+    ensureUsers = [
+      {
+        name = "hass";
+        ensureDBOwnership = true;
+      }
+    ];
   };
 
   homelab.backup.jobs.home-assistant = {
     at = "00:10";
-    databases = [ { engine = "postgres"; name = "hass"; } ];
+    databases = [
+      {
+        engine = "postgres";
+        name = "hass";
+      }
+    ];
     trees = [ autoBackupDir ];
     maxAge = autoBackupStaleAfterHours;
     maxAgePaths = [ autoBackupDir ];
@@ -63,9 +70,9 @@ in
 
   sops.templates."config-secrets.yaml" = {
     content = ''
-        latitude: ${config.sops.placeholder."config-secrets/latitude"}
-        longitude: ${config.sops.placeholder."config-secrets/longitude"}
-        elevation: ${config.sops.placeholder."config-secrets/elevation"}
+      latitude: ${config.sops.placeholder."config-secrets/latitude"}
+      longitude: ${config.sops.placeholder."config-secrets/longitude"}
+      elevation: ${config.sops.placeholder."config-secrets/elevation"}
     '';
     owner = "hass";
     group = "hass";
