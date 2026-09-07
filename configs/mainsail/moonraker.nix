@@ -24,34 +24,5 @@
 
     octoprint_compat = { };
     history = { };
-
-    update_manager = {
-      channel = "dev";
-      refresh_interval = 168;
-    };
-
-    "update_manager mainsail" = {
-      path = "/home/user/mainsail";
-      repo = "mainsail-crew/mainsail";
-      channel = "stable";
-      type = "web";
-    };
-
-    "update_manager mainsail-config" = {
-      managed_services = "klipper";
-      origin = "https://github.com/mainsail-crew/mainsail-config.git";
-      path = "/home/user/mainsail-config";
-      primary_branch = "master";
-      type = "git_repo";
-    };
-
-    "update_manager Klipper-Adaptive-Meshing-Purging" = {
-      type = "git_repo";
-      channel = "dev";
-      path = "~/Klipper-Adaptive-Meshing-Purging";
-      origin = "https://github.com/kyleisah/Klipper-Adaptive-Meshing-Purging.git";
-      managed_services = "klipper";
-      primary_branch = "main";
-    };
   };
 }
