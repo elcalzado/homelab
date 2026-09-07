@@ -18,6 +18,17 @@ in
     klipper.enable = true;
   };
 
+  users.groups.klipper = { };
+  users.users.klipper = {
+    isSystemUser = true;
+    group = "klipper";
+  };
+
+  services.klipper.user = "klipper";
+  services.klipper.group = "klipper";
+
+  services.moonraker.group = "klipper";
+
   homelab.backup.jobs.mainsail = {
     at = "00:30";
     databases = [ { engine = "sqlite"; path = "${dataDir}/database/moonraker-sql.db"; } ];
