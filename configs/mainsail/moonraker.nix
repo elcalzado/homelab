@@ -18,8 +18,7 @@
         "*.local"
         "*://localhost"
         "*://localhost:*"
-        "*://my.mainsail.xyz"
-        "*://app.fluidd.xyz"
+        "https://mainsail.guster.xyz"
       ];
     };
 

@@ -1,7 +1,6 @@
 _:
 let
-  klipperDir = "/var/lib/klipper";
-  moonrakerDir = "/var/lib/moonraker";
+  dataDir = "/var/lib/moonraker";
 in
 {
   imports = [
@@ -13,7 +12,6 @@ in
     mainsail = {
       enable = true;
       hostName = "0.0.0.0";
-      nginx.serverAliases = [ "mainsail.guster.xyz" ];
     };
 
     moonraker.enable = true;
@@ -22,7 +20,9 @@ in
 
   homelab.backup.jobs.mainsail = {
     at = "00:30";
-    trees = [ klipperDir moonrakerDir ];
+    databases = [ { engine = "sqlite"; path = "${dataDir}/database/moonraker-sql.db"; } ];
+    trees = [ "${dataDir}/gcodes" ];
+    mayBeEmpty = [ "${dataDir}/gcodes" ];
   };
 
   networking.firewall.allowedTCPPorts = [ 80 ];
