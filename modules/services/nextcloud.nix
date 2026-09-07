@@ -13,7 +13,7 @@ in
       dbtype = "pgsql";
     };
     database.createLocally = true;
-    datadir =  dataDir;
+    datadir = dataDir;
     hostName = "nextcloud.guster.xyz";
     settings.trusted_domains = [ "nextcloud.home.arpa" ];
     https = true;
@@ -25,7 +25,12 @@ in
 
   homelab.backup.jobs.nextcloud = {
     at = "00:00";
-    databases = [ { engine = "postgres"; name = "nextcloud"; } ];
+    databases = [
+      {
+        engine = "postgres";
+        name = "nextcloud";
+      }
+    ];
   };
 
   systemd = {
@@ -40,5 +45,8 @@ in
     };
   };
 
-  networking.firewall.allowedTCPPorts = [ 80 443 ];
+  networking.firewall.allowedTCPPorts = [
+    80
+    443
+  ];
 }

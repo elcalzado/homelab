@@ -1,4 +1,3 @@
-_:
-{
+_: {
   services.flaresolverr.enable = true;
 }

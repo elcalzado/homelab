@@ -1,5 +1,14 @@
 #!/usr/bin/env bash
 # Fast checks before every commit; CI additionally runs eval
+
+STAGED_NIX_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\.nix$')
+
+if [[ -n "$STAGED_NIX_FILES" ]]; then
+  echo "Formatting Nix files..."
+  echo "$STAGED_NIX_FILES" | xargs nix run nixpkgs#nixfmt -- 2>/dev/null
+  echo "$STAGED_NIX_FILES" | xargs git add
+fi
+
 set -e
 checks="$(git rev-parse --show-toplevel)/scripts/checks.sh"
 "$checks" lint

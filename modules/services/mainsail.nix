@@ -31,7 +31,12 @@ in
 
   homelab.backup.jobs.mainsail = {
     at = "00:30";
-    databases = [ { engine = "sqlite"; path = "${dataDir}/database/moonraker-sql.db"; } ];
+    databases = [
+      {
+        engine = "sqlite";
+        path = "${dataDir}/database/moonraker-sql.db";
+      }
+    ];
     trees = [ "${dataDir}/gcodes" ];
     mayBeEmpty = [ "${dataDir}/gcodes" ];
   };

@@ -15,7 +15,12 @@ in
 
   homelab.backup.jobs.immich = {
     at = "00:20";
-    databases = [ { engine = "postgres"; name = "immich"; } ];
+    databases = [
+      {
+        engine = "postgres";
+        name = "immich";
+      }
+    ];
   };
 
   systemd = {

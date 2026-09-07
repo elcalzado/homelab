@@ -191,12 +191,16 @@
   services.klipper.extraSettings = lib.concatStringsSep "\n" [
     (builtins.readFile ./mainsail.cfg)
     (builtins.readFile ./macros.cfg)
-    (lib.replaceStrings [
-      "[include ./KAMP/Adaptive_Meshing.cfg]       # Include to enable adaptive meshing configuration.\n"
-      "[include ./KAMP/Line_Purge.cfg]             # Include to enable adaptive line purging configuration.\n"
-      "#[include ./KAMP/Voron_Purge.cfg]            # Include to enable adaptive Voron logo purging configuration.\n"
-      "[include ./KAMP/Smart_Park.cfg]             # Include to enable the Smart Park function, which parks the printhead near the print area for final heating.\n"
-    ] [ "" "" "" "" ] (builtins.readFile ./KAMP_Settings.cfg))
+    (lib.replaceStrings
+      [
+        "[include ./KAMP/Adaptive_Meshing.cfg]       # Include to enable adaptive meshing configuration.\n"
+        "[include ./KAMP/Line_Purge.cfg]             # Include to enable adaptive line purging configuration.\n"
+        "#[include ./KAMP/Voron_Purge.cfg]            # Include to enable adaptive Voron logo purging configuration.\n"
+        "[include ./KAMP/Smart_Park.cfg]             # Include to enable the Smart Park function, which parks the printhead near the print area for final heating.\n"
+      ]
+      [ "" "" "" "" ]
+      (builtins.readFile ./KAMP_Settings.cfg)
+    )
     (builtins.readFile ./KAMP/Adaptive_Meshing.cfg)
     (builtins.readFile ./KAMP/Line_Purge.cfg)
     (builtins.readFile ./KAMP/Smart_Park.cfg)

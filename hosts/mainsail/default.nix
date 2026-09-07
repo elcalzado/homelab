@@ -9,9 +9,15 @@
     hostName = "mainsail";
     usePredictableInterfaceNames = false;
     interfaces.wlan0.ipv4.addresses = [
-      { address = "10.0.30.4"; prefixLength = 26; }
+      {
+        address = "10.0.30.4";
+        prefixLength = 26;
+      }
     ];
-    defaultGateway = { address = "10.0.30.1"; interface = "wlan0"; };
+    defaultGateway = {
+      address = "10.0.30.1";
+      interface = "wlan0";
+    };
     nameservers = [ "10.0.30.1" ];
 
     wireless = {

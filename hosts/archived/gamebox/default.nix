@@ -9,9 +9,15 @@
     hostName = "gamebox";
     usePredictableInterfaceNames = false;
     interfaces.eth0.ipv4.addresses = [
-      { address = "10.0.50.3"; prefixLength = 27; }
+      {
+        address = "10.0.50.3";
+        prefixLength = 27;
+      }
     ];
-    defaultGateway = { address = "10.0.50.1"; interface = "eth0"; };
+    defaultGateway = {
+      address = "10.0.50.1";
+      interface = "eth0";
+    };
     nameservers = [ "10.0.50.1" ];
   };
 

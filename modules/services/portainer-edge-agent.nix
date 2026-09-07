@@ -30,8 +30,8 @@ in
     secrets."edgeAgent/key" = { };
 
     templates."portainer-edge-agent.env".content = ''
-        EDGE_ID=${config.sops.placeholder."edgeAgent/id"}
-        EDGE_KEY=${config.sops.placeholder."edgeAgent/key"}
+      EDGE_ID=${config.sops.placeholder."edgeAgent/id"}
+      EDGE_KEY=${config.sops.placeholder."edgeAgent/key"}
     '';
   };
 
