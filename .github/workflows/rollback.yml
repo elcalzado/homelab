@@ -19,6 +19,7 @@ on:
           - servarr
           - nextcloud
           - home-assistant
+          - mainsail
 
 permissions:
   contents: read
