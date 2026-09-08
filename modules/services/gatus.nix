@@ -14,6 +14,15 @@ let
     }
   ];
 
+  backupAlerts = [
+    {
+      type = "matrix";
+      failure-threshold = 1;
+      success-threshold = 1;
+      send-on-resolved = true;
+    }
+  ];
+
   web =
     {
       name,
@@ -53,21 +62,34 @@ let
       url = "tcp://${host}:${toString port}";
       conditions = [ "[CONNECTED] == true" ];
     };
+
+  backupJobs = import ../../configs/gatus/backup-jobs.nix;
+
+  externalBackup = name: {
+    inherit name;
+    group = "backups";
+    token = "\${BACKUP_GATUS_TOKEN}";
+    heartbeat = {
+      interval = "25h";
+    };
+    alerts = backupAlerts;
+  };
 in
 {
   sops = {
     secrets = {
       "matrix/accessToken" = { };
       "matrix/roomId" = { };
+      "backup/gatusToken" = { };
     };
 
     templates."gatus.env".content = ''
       MATRIX_ACCESS_TOKEN=${config.sops.placeholder."matrix/accessToken"}
       MATRIX_ROOM_ID="'${config.sops.placeholder."matrix/roomId"}'"
+      BACKUP_GATUS_TOKEN=${config.sops.placeholder."backup/gatusToken"}
     '';
   };
 
-  # Web UI on :8080
   services.gatus = {
     enable = true;
     openFirewall = true;
@@ -198,6 +220,8 @@ in
           port = 22;
         })
       ];
+
+      external-endpoints = map externalBackup backupJobs;
     };
   };
 

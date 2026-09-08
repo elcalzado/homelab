@@ -74,9 +74,9 @@
         };
       };
 
-      hostNames = lib.filter (name: builtins.pathExists (./hosts + "/${name}/meta.nix")) (
-        lib.attrNames (lib.filterAttrs (_name: type: type == "directory") (builtins.readDir ./hosts))
-      );
+      hostNames = lib.filter (
+        name: builtins.pathExists (./hosts + "/${name}/meta.nix") && name != "archived"
+      ) (lib.attrNames (lib.filterAttrs (_name: type: type == "directory") (builtins.readDir ./hosts)));
 
       hostMeta = lib.genAttrs hostNames (
         name:
@@ -107,6 +107,12 @@
         ) meta.targets;
 
       hosts = lib.foldl' (acc: name: acc // mkHost name) { } hostNames;
+
+      allBackupJobs = lib.unique (
+        lib.concatLists (
+          lib.mapAttrsToList (_: host: lib.attrNames (host.config.homelab.backup.jobs or { })) hosts
+        )
+      );
 
       mkNode =
         output:
@@ -142,6 +148,8 @@
       nixosConfigurations = hosts;
 
       deploy = { inherit nodes; };
+
+      backupJobs = allBackupJobs;
 
       checks = lib.mapAttrs (
         system: names:

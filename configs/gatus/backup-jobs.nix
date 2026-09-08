@@ -1,0 +1,16 @@
+[
+  "gatus"
+  "home-assistant"
+  "immich"
+  "jellyfin"
+  "mainsail"
+  "nextcloud"
+  "omada"
+  "portainer"
+  "qbittorrent"
+  "bazarr"
+  "prowlarr"
+  "radarr"
+  "seerr"
+  "sonarr"
+]
