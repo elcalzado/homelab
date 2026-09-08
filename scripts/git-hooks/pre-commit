@@ -14,4 +14,9 @@ checks="$(git rev-parse --show-toplevel)/scripts/checks.sh"
 "$checks" lint
 "$checks" shellcheck
 "$checks" secrets
+
 "$(git rev-parse --show-toplevel)/scripts/check-ssh-keys.sh"
+
+"$(git rev-parse --show-toplevel)/scripts/update-workflows.sh"
+
+"$(git rev-parse --show-toplevel)/scripts/update-backup-jobs.sh"
