@@ -1,5 +1,4 @@
 name: deploy
-
 on:
   workflow_dispatch:
     inputs:
@@ -11,15 +10,16 @@ on:
           - builder
           - gatus
           - glance
+          - home-assistant
           - immich
           - jellyfin
+          - mainsail
+          - nextcloud
           - omada
           - portainer
           - qbittorrent
+          - runner
           - servarr
-          - nextcloud
-          - home-assistant
-          - mainsail
       mode:
         description: Preview only, or actually switch
         required: true
@@ -28,14 +28,11 @@ on:
         options:
           - dry-activate
           - switch
-
 permissions:
   contents: read
-
 concurrency:
   group: host-${{ inputs.host }}
   cancel-in-progress: false
-
 jobs:
   deploy:
     name: ${{ inputs.mode }} ${{ inputs.host }}

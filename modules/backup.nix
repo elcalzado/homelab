@@ -11,6 +11,8 @@ let
   stagingRoot = "/var/backup";
   knownHostsFile = "${stagingRoot}/known_hosts";
 
+  gatusUrl = "http://gatus.home.arpa:8080";
+
   absolutePath = lib.types.strMatching "/[^\n]*";
 
   shellList = xs: lib.escapeShellArg (lib.concatStringsSep "\n" xs);
@@ -174,6 +176,40 @@ let
       date --iso-8601=seconds > "$STAGING_ROOT/$1.last-failure"
     '';
   };
+
+  successRecorder = pkgs.writeShellApplication {
+    name = "backup-record-success";
+    runtimeInputs = [ pkgs.coreutils ];
+    text = ''
+      STAGING_ROOT=${lib.escapeShellArg stagingRoot}
+      date --iso-8601=seconds > "$STAGING_ROOT/$1.last-success"
+    '';
+  };
+
+  gatusPushScript = pkgs.writeShellApplication {
+    name = "backup-gatus-push";
+    runtimeInputs = [
+      pkgs.curl
+      pkgs.jq
+    ];
+    text = ''
+      success="$1"
+      job_name="$2"
+      error_message="''${3:-}"
+
+      token=$(cat "$GATUS_TOKEN_FILE")
+
+      url="$GATUS_URL/api/v1/endpoints/backups_$job_name/external?success=$success"
+      if [[ "$success" == "false" && -n "$error_message" ]]; then
+        error_encoded=$(jq -rn --arg v "$error_message" '$v|@uri')
+        url+="&error=$error_encoded"
+      fi
+
+      curl -fsS -X POST \
+        -H "Authorization: Bearer $token" \
+        "$url"
+    '';
+  };
 in
 {
   options.homelab.backup = {
@@ -277,7 +313,12 @@ in
   };
 
   config = lib.mkIf (cfg.jobs != { }) {
-    sops.secrets."backup/sshKey" = { };
+    sops.secrets = {
+      "backup/sshKey" = { };
+      "backup/gatusToken" = {
+        sopsFile = ../secrets/backups.yaml;
+      };
+    };
 
     programs.ssh.knownHosts = lib.optionalAttrs (cfg.nas.hostKey != null) {
       ${cfg.nas.host} = {
@@ -298,6 +339,7 @@ in
             description = "Back up ${name} to ${cfg.nas.host}";
             after = [ "network-online.target" ];
             wants = [ "network-online.target" ];
+            onSuccess = [ "backup-success@${name}.service" ];
             onFailure = [ "backup-failed@${name}.service" ];
 
             serviceConfig = {
@@ -316,14 +358,45 @@ in
           }
         ) cfg.jobs
         // {
-          "backup-failed@" = {
-            description = "Record a failed backup of %i";
+          "backup-success@" = {
+            description = "Record and announce a successful backup of %i";
 
             serviceConfig = {
               Type = "oneshot";
-              ExecStart = "${lib.getExe failureRecorder} %i";
+              Environment = [
+                "GATUS_URL=${gatusUrl}"
+                "GATUS_TOKEN_FILE=${config.sops.secrets."backup/gatusToken".path}"
+              ];
+              ExecStart = [
+                "${lib.getExe successRecorder} %i"
+                "${lib.getExe gatusPushScript} true %i"
+              ];
               UMask = "0077";
               ReadWritePaths = [ stagingRoot ];
+              ReadOnlyPaths = [ config.sops.secrets."backup/gatusToken".path ];
+              ProtectSystem = "strict";
+              ProtectHome = true;
+              PrivateTmp = true;
+              NoNewPrivileges = true;
+            };
+          };
+
+          "backup-failed@" = {
+            description = "Record and announce a failed backup of %i";
+
+            serviceConfig = {
+              Type = "oneshot";
+              Environment = [
+                "GATUS_URL=${gatusUrl}"
+                "GATUS_TOKEN_FILE=${config.sops.secrets."backup/gatusToken".path}"
+              ];
+              ExecStart = [
+                "${lib.getExe failureRecorder} %i"
+                "${lib.getExe gatusPushScript} false %i 'backup job %i failed on ${config.networking.hostName}'"
+              ];
+              UMask = "0077";
+              ReadWritePaths = [ stagingRoot ];
+              ReadOnlyPaths = [ config.sops.secrets."backup/gatusToken".path ];
               ProtectSystem = "strict";
               ProtectHome = true;
               PrivateTmp = true;

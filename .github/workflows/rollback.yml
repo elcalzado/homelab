@@ -1,5 +1,4 @@
 name: rollback
-
 on:
   workflow_dispatch:
     inputs:
@@ -11,23 +10,21 @@ on:
           - builder
           - gatus
           - glance
+          - home-assistant
           - immich
           - jellyfin
+          - mainsail
+          - nextcloud
           - omada
           - portainer
           - qbittorrent
+          - runner
           - servarr
-          - nextcloud
-          - home-assistant
-          - mainsail
-
 permissions:
   contents: read
-
 concurrency:
   group: host-${{ inputs.host }}
   cancel-in-progress: false
-
 jobs:
   rollback:
     name: rollback ${{ inputs.host }}
