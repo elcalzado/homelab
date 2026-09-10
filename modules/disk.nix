@@ -31,6 +31,13 @@ let
             "noatime"
           ];
         };
+        "/home" = {
+          mountpoint = "/home";
+          mountOptions = [
+            "compress=zstd"
+            "noatime"
+          ];
+        };
       };
     };
     home = {
@@ -105,6 +112,19 @@ in
         effectiveDisks = if userDisks != { } then userDisks else { default = defaultDevice; };
         effectivePartitions = if userPartitions != { } then userPartitions else defaultPartitions;
 
+        hasHomePartition = effectivePartitions ? "home";
+
+        effectiveRoleContent =
+          if hasHomePartition then
+            config.homelab.disk.roleContent
+            // {
+              root = config.homelab.disk.roleContent.root // {
+                subvolumes = lib.removeAttrs (config.homelab.disk.roleContent.root.subvolumes or { }) [ "/home" ];
+              };
+            }
+          else
+            config.homelab.disk.roleContent;
+
         diskEntry =
           diskName: device:
           let
@@ -128,7 +148,7 @@ in
               partitions = lib.mapAttrs (
                 roleName: roleCfg:
                 let
-                  content = config.homelab.disk.roleContent.${roleName} or { };
+                  content = effectiveRoleContent.${roleName} or { };
                   type = if roleName == "boot" then "EF00" else null;
                 in
                 {
