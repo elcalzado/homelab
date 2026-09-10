@@ -13,18 +13,37 @@ let
 
   inherit (targetConfig) board;
   usbMode = targetConfig.usbMode or null;
+  useDisko = targetConfig.useDisko or false;
 in
 {
-  imports = profiles.${board};
+  imports = profiles.${board} ++ [ ./disk.nix ];
 
   boot.loader.grub.enable = false;
   boot.loader.generic-extlinux-compatible.enable = true;
 
   hardware.enableRedistributableFirmware = true;
 
-  fileSystems."/" = {
+  fileSystems."/boot" = {
+    device = "/dev/disk/by-label/FIRMWARE";
+    fsType = "vfat";
+  };
+
+  fileSystems."/" = lib.mkIf (!useDisko) {
     device = "/dev/disk/by-label/NIXOS_SD";
     fsType = "ext4";
+  };
+
+  homelab.disk = {
+    enable = useDisko;
+    defaultDevice = lib.mkDefault "/dev/mmcblk0";
+    roleContent = {
+      root = lib.mkDefault {
+        type = "filesystem";
+        format = "ext4";
+        mountpoint = "/";
+        mountOptions = [ "noatime" ];
+      };
+    };
   };
 
   hardware.deviceTree.overlays = lib.optionals (board == "rpi-zero2w" && usbMode != null) [
@@ -57,10 +76,6 @@ in
           "peripheral"
         ];
       message = "usbMode must be one of \"host\", \"otg\", or \"peripheral\" (got: ${toString usbMode})";
-    }
-    {
-      assertion = usbMode == null || board == "rpi-zero2w";
-      message = "usbMode is only supported on rpi-zero2w (board is ${board})";
     }
   ];
 }
