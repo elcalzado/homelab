@@ -41,5 +41,8 @@ in
 
   services.qemuGuest.enable = true;
 
-  disko.devices.disk.main.device = "/dev/sda";
+  homelab.disk = {
+    enable = true;
+    defaultDevice = lib.mkDefault "/dev/sda";
+  };
 }

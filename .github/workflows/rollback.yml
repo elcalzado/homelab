@@ -1,4 +1,5 @@
 name: rollback
+run-name: rollback ${{ inputs.host }}
 on:
   workflow_dispatch:
     inputs:
