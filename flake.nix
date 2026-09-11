@@ -36,6 +36,8 @@
           specialArgs = { inherit inputs targetConfig; };
         };
 
+      systemOf = cfg: cfg.config.nixpkgs.hostPlatform.system;
+
       platforms = {
         lxc = [ ./modules/lxc.nix ];
         vm = [ ./modules/vm.nix ];
@@ -74,11 +76,15 @@
         };
       };
 
-      hostNames = lib.filter (
-        name: builtins.pathExists (./hosts + "/${name}/meta.nix") && name != "archived"
-      ) (lib.attrNames (lib.filterAttrs (_name: type: type == "directory") (builtins.readDir ./hosts)));
+      isDirectory = _name: type: type == "directory";
+      hasMetaFile = name: builtins.pathExists (./hosts + "/${name}/meta.nix");
+      isRealHost = name: hasMetaFile name && name != "archived";
 
-      hostMeta = lib.genAttrs hostNames (
+      hostNames = lib.filter isRealHost (
+        lib.attrNames (lib.filterAttrs isDirectory (builtins.readDir ./hosts))
+      );
+
+      loadHostMeta =
         name:
         let
           meta = import ./hosts/${name}/meta.nix;
@@ -86,8 +92,9 @@
         if builtins.isAttrs meta then
           meta
         else
-          throw "hosts/${name}/meta.nix must evaluate to a plain attrset, not a function or other value"
-      );
+          throw "hosts/${name}/meta.nix must evaluate to a plain attrset, not a function or other value";
+
+      hostMeta = lib.genAttrs hostNames loadHostMeta;
 
       mkHost =
         name:
@@ -108,30 +115,30 @@
 
       hosts = lib.foldl' (acc: name: acc // mkHost name) { } hostNames;
 
-      allBackupJobs = lib.unique (
-        lib.concatLists (
-          lib.mapAttrsToList (_: host: lib.attrNames (host.config.homelab.backup.jobs or { })) hosts
-        )
-      );
+      backupJobNamesOf = host: lib.attrNames (host.config.homelab.backup.jobs or { });
+
+      allBackupJobs = lib.unique (lib.concatLists (lib.mapAttrsToList (_: backupJobNamesOf) hosts));
+
+      primaryAddressOf =
+        cfg:
+        let
+          interface = cfg.config.networking.defaultGateway.interface;
+        in
+        (lib.head cfg.config.networking.interfaces.${interface}.ipv4.addresses).address;
 
       mkNode =
         output:
         let
           cfg = hosts.${output};
-          system = cfg.config.nixpkgs.hostPlatform.system;
         in
         {
-          hostname =
-            let
-              interface = cfg.config.networking.defaultGateway.interface;
-            in
-            (lib.head cfg.config.networking.interfaces.${interface}.ipv4.addresses).address;
+          hostname = primaryAddressOf cfg;
           sshUser = "deploy";
           autoRollback = true;
           magicRollback = true;
           profiles.system = {
             user = "root";
-            path = deploy-rs.lib.${system}.activate.nixos cfg;
+            path = deploy-rs.lib.${systemOf cfg}.activate.nixos cfg;
           };
         };
 
@@ -143,6 +150,10 @@
         in
         mkNode "${name}-${target}"
       );
+
+      hostsBySystem = lib.groupBy (name: systemOf hosts.${name}) (lib.attrNames hosts);
+
+      toplevelChecksFor = names: lib.genAttrs names (name: hosts.${name}.config.system.build.toplevel);
     in
     {
       nixosConfigurations = hosts;
@@ -152,9 +163,7 @@
       backupJobs = allBackupJobs;
 
       checks = lib.mapAttrs (
-        system: names:
-        lib.genAttrs names (name: hosts.${name}.config.system.build.toplevel)
-        // deploy-rs.lib.${system}.deployChecks { inherit nodes; }
-      ) (lib.groupBy (name: hosts.${name}.config.nixpkgs.hostPlatform.system) (lib.attrNames hosts));
+        system: names: toplevelChecksFor names // deploy-rs.lib.${system}.deployChecks { inherit nodes; }
+      ) hostsBySystem;
     };
 }
