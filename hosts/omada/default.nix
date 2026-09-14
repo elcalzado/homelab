@@ -1,11 +1,9 @@
-{ lib, ... }:
+{ ... }:
 {
   imports = [
     ../../modules/common.nix
     ../../modules/services/omada.nix
   ];
-
-  nixpkgs.config.allowUnfreePredicate = pkg: lib.getName pkg == "mongodb-ce";
 
   networking = {
     hostName = "omada";

@@ -81,6 +81,8 @@ let
   mongodPort = 27217;
 in
 {
+  nixpkgs.config.allowUnfreePredicate = pkg: lib.getName pkg == "mongodb-ce";
+
   homelab.backup.jobs.omada = {
     at = "01:20";
     databases = [
