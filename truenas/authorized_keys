@@ -11,3 +11,4 @@ restrict,command="rrsync -wo /mnt/blueberry/backups/gatus" ssh-ed25519 AAAAC3Nza
 restrict,command="rrsync -wo /mnt/blueberry/backups/nextcloud" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICbB1VfY+vBUYRSWOIhLuxtP64VeKxSGkdW52pq5FwdG backup@nextcloud
 restrict,command="rrsync -wo /mnt/blueberry/backups/home-assistant" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILOQ+VgEsTMZlDv5IFpcjlXI1bHqLBaJmPQ7q/C6u8EY backup@home-assistant
 restrict,command="rrsync -wo /mnt/blueberry/backups/minebox" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIA3JGlfZWjPvxaYJACiJOqrCLLOluY6CgeK9oCL0Wym8 backup@minebox
+restrict,command="rrsync -wo /mnt/blueberry/backups/manager" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIomsCSC8BlihoL7OLXoJKJdBtFNzW4A0NwLw4QsrjFS backup@manager
