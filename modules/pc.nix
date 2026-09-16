@@ -30,5 +30,6 @@ in
     cpu.amd.updateMicrocode = lib.mkDefault isx86_64;
   };
 
-  disko.devices.disk.main.device = "/dev/nvme0n1";
+  # No disk definitions by default. Each pc host defines real drives in meta.nix.
+  homelab.disk.enable = true;
 }
