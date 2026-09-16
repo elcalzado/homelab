@@ -11,16 +11,79 @@ let
   stagingRoot = "/var/backup";
   knownHostsFile = "${stagingRoot}/known_hosts";
 
-  gatusUrl = "http://gatus.home.arpa:8080";
+  gatusEnvironment = [
+    "GATUS_URL=http://gatus.home.arpa:8080"
+    "GATUS_TOKEN_FILE=${config.sops.secrets."backup/gatusToken".path}"
+  ];
+
+  hardenedOneshot = {
+    Type = "oneshot";
+    UMask = "0077";
+    ProtectSystem = "strict";
+    ProtectHome = true;
+    PrivateTmp = true;
+    NoNewPrivileges = true;
+  };
 
   absolutePath = lib.types.strMatching "/[^\n]*";
 
   shellList = xs: lib.escapeShellArg (lib.concatStringsSep "\n" xs);
 
+  engineSpecs = {
+    sqlite = {
+      requiredFields = [ "path" ];
+      unusedFields = [
+        "name"
+        "port"
+      ];
+      dumpLine =
+        db:
+        lib.concatStringsSep "\t" [
+          "sqlite"
+          db.path
+          (baseNameOf db.path)
+        ];
+      tools = [ pkgs.sqlite ];
+    };
+    postgres = {
+      requiredFields = [ "name" ];
+      unusedFields = [
+        "path"
+        "port"
+      ];
+      dumpLine =
+        db:
+        lib.concatStringsSep "\t" [
+          "postgres"
+          db.name
+          "${db.name}.sql"
+        ];
+      tools = [
+        config.services.postgresql.package
+        pkgs.util-linux
+      ];
+    };
+    mongodb = {
+      requiredFields = [
+        "name"
+        "port"
+      ];
+      unusedFields = [ "path" ];
+      dumpLine =
+        db:
+        lib.concatStringsSep "\t" [
+          "mongodb"
+          (toString db.port)
+          db.name
+        ];
+      tools = [ pkgs.mongodb-tools ];
+    };
+  };
+
   databaseEntry = lib.types.submodule {
     options = {
       engine = lib.mkOption {
-        type = lib.types.enum (lib.attrNames engineFields);
+        type = lib.types.enum (lib.attrNames engineSpecs);
         description = "Which dump tool handles this database. Always stated.";
       };
 
@@ -44,30 +107,6 @@ let
     };
   };
 
-  engineFields = {
-    sqlite = {
-      required = [ "path" ];
-      unused = [
-        "name"
-        "port"
-      ];
-    };
-    postgres = {
-      required = [ "name" ];
-      unused = [
-        "path"
-        "port"
-      ];
-    };
-    mongodb = {
-      required = [
-        "name"
-        "port"
-      ];
-      unused = [ "path" ];
-    };
-  };
-
   treeAssertions =
     jobName: job:
     map (path: {
@@ -80,9 +119,9 @@ let
     lib.imap0 (
       index: db:
       let
-        spec = engineFields.${db.engine};
-        missing = lib.filter (field: db.${field} == null) spec.required;
-        ignored = lib.filter (field: db.${field} != null) spec.unused;
+        spec = engineSpecs.${db.engine};
+        missing = lib.filter (field: db.${field} == null) spec.requiredFields;
+        ignored = lib.filter (field: db.${field} != null) spec.unusedFields;
         located = "homelab.backup.jobs.${jobName}.databases.[${toString index}] (${db.engine})";
       in
       {
@@ -95,26 +134,7 @@ let
       }
     ) job.databases;
 
-  dumpLine =
-    db:
-    if db.engine == "sqlite" then
-      lib.concatStringsSep "\t" [
-        "sqlite"
-        db.path
-        (baseNameOf db.path)
-      ]
-    else if db.engine == "postgres" then
-      lib.concatStringsSep "\t" [
-        "postgres"
-        db.name
-        "${db.name}.sql"
-      ]
-    else
-      lib.concatStringsSep "\t" [
-        "mongodb"
-        (toString db.port)
-        db.name
-      ];
+  dumpLine = db: engineSpecs.${db.engine}.dumpLine db;
 
   sqliteParents =
     job:
@@ -124,18 +144,13 @@ let
 
   engineTools =
     job:
-    lib.concatMap (
-      engine:
-      if engine == "sqlite" then
-        [ pkgs.sqlite ]
-      else if engine == "postgres" then
-        [
-          config.services.postgresql.package
-          pkgs.util-linux
-        ]
-      else
-        [ pkgs.mongodb-tools ]
-    ) (lib.unique (map (db: db.engine) job.databases));
+    lib.concatMap (engine: engineSpecs.${engine}.tools) (
+      lib.unique (map (db: db.engine) job.databases)
+    );
+
+  maxAgePathsFor = job: if job.maxAgePaths == [ ] then job.trees else job.maxAgePaths;
+
+  strictHostKeyChecking = if cfg.nas.hostKey == null then "accept-new" else "yes";
 
   jobRunner =
     name: job:
@@ -153,12 +168,12 @@ let
         STAGE=${lib.escapeShellArg "${stagingRoot}/${name}"}
         MARKER=${lib.escapeShellArg "${stagingRoot}/${name}.last-success"}
         KNOWN_HOSTS=${lib.escapeShellArg knownHostsFile}
-        STRICT_HOST_KEY=${if cfg.nas.hostKey == null then "accept-new" else "yes"}
+        STRICT_HOST_KEY=${strictHostKeyChecking}
         IDENTITY=${lib.escapeShellArg config.sops.secrets."backup/sshKey".path}
         REMOTE=${lib.escapeShellArg "${cfg.nas.user}@${cfg.nas.host}:${name}/"}
         MAX_DELETE=${toString cfg.maxDelete}
         MAX_AGE_HOURS=${lib.escapeShellArg (lib.optionalString (job.maxAge != null) (toString job.maxAge))}
-        MAX_AGE_PATHS=${shellList (if job.maxAgePaths == [ ] then job.trees else job.maxAgePaths)}
+        MAX_AGE_PATHS=${shellList (maxAgePathsFor job)}
         MAY_BE_EMPTY=${shellList job.mayBeEmpty}
         DATABASES=${shellList (map dumpLine job.databases)}
         FILES=${shellList job.files}
@@ -168,23 +183,19 @@ let
       '';
     };
 
-  failureRecorder = pkgs.writeShellApplication {
-    name = "backup-record-failure";
-    runtimeInputs = [ pkgs.coreutils ];
-    text = ''
-      STAGING_ROOT=${lib.escapeShellArg stagingRoot}
-      date --iso-8601=seconds > "$STAGING_ROOT/$1.last-failure"
-    '';
-  };
+  mkResultRecorder =
+    outcome:
+    pkgs.writeShellApplication {
+      name = "backup-record-${outcome}";
+      runtimeInputs = [ pkgs.coreutils ];
+      text = ''
+        STAGING_ROOT=${lib.escapeShellArg stagingRoot}
+        date --iso-8601=seconds > "$STAGING_ROOT/$1.last-${outcome}"
+      '';
+    };
 
-  successRecorder = pkgs.writeShellApplication {
-    name = "backup-record-success";
-    runtimeInputs = [ pkgs.coreutils ];
-    text = ''
-      STAGING_ROOT=${lib.escapeShellArg stagingRoot}
-      date --iso-8601=seconds > "$STAGING_ROOT/$1.last-success"
-    '';
-  };
+  failureRecorder = mkResultRecorder "failure";
+  successRecorder = mkResultRecorder "success";
 
   gatusPushScript = pkgs.writeShellApplication {
     name = "backup-gatus-push";
@@ -210,6 +221,34 @@ let
         "$url"
     '';
   };
+
+  mkStagingDirRule = path: "d ${path} 0700 root root -";
+
+  mkOutcomeService =
+    {
+      outcome,
+      recorder,
+      gatusArgs,
+    }:
+    {
+      description = "Record and announce a ${outcome} backup of %i";
+      serviceConfig = hardenedOneshot // {
+        Environment = gatusEnvironment;
+        ExecStart = [
+          "${lib.getExe recorder} %i"
+          "${lib.getExe gatusPushScript} ${gatusArgs}"
+        ];
+        ReadWritePaths = [ stagingRoot ];
+        ReadOnlyPaths = [ config.sops.secrets."backup/gatusToken".path ];
+      };
+    };
+
+  hasDuplicateTimeSlot =
+    jobs:
+    let
+      slots = lib.mapAttrsToList (_: job: job.at) jobs;
+    in
+    lib.length (lib.unique slots) != lib.length slots;
 in
 {
   options.homelab.backup = {
@@ -328,9 +367,9 @@ in
 
     systemd = {
       tmpfiles.rules = [
-        "d ${stagingRoot} 0700 root root -"
+        (mkStagingDirRule stagingRoot)
       ]
-      ++ lib.mapAttrsToList (name: _: "d ${stagingRoot}/${name} 0700 root root -") cfg.jobs;
+      ++ lib.mapAttrsToList (name: _: mkStagingDirRule "${stagingRoot}/${name}") cfg.jobs;
 
       services =
         lib.mapAttrs' (
@@ -342,15 +381,9 @@ in
             onSuccess = [ "backup-success@${name}.service" ];
             onFailure = [ "backup-failed@${name}.service" ];
 
-            serviceConfig = {
-              Type = "oneshot";
+            serviceConfig = hardenedOneshot // {
               ExecStart = lib.getExe (jobRunner name job);
-              UMask = "0077";
               ReadWritePaths = [ stagingRoot ] ++ sqliteParents job;
-              ProtectSystem = "strict";
-              ProtectHome = true;
-              PrivateTmp = true;
-              NoNewPrivileges = true;
               TimeoutStartSec = "1h";
               Nice = 10;
               IOSchedulingClass = "idle";
@@ -358,50 +391,16 @@ in
           }
         ) cfg.jobs
         // {
-          "backup-success@" = {
-            description = "Record and announce a successful backup of %i";
-
-            serviceConfig = {
-              Type = "oneshot";
-              Environment = [
-                "GATUS_URL=${gatusUrl}"
-                "GATUS_TOKEN_FILE=${config.sops.secrets."backup/gatusToken".path}"
-              ];
-              ExecStart = [
-                "${lib.getExe successRecorder} %i"
-                "${lib.getExe gatusPushScript} true %i"
-              ];
-              UMask = "0077";
-              ReadWritePaths = [ stagingRoot ];
-              ReadOnlyPaths = [ config.sops.secrets."backup/gatusToken".path ];
-              ProtectSystem = "strict";
-              ProtectHome = true;
-              PrivateTmp = true;
-              NoNewPrivileges = true;
-            };
+          "backup-success@" = mkOutcomeService {
+            outcome = "successful";
+            recorder = successRecorder;
+            gatusArgs = "true %i";
           };
 
-          "backup-failed@" = {
-            description = "Record and announce a failed backup of %i";
-
-            serviceConfig = {
-              Type = "oneshot";
-              Environment = [
-                "GATUS_URL=${gatusUrl}"
-                "GATUS_TOKEN_FILE=${config.sops.secrets."backup/gatusToken".path}"
-              ];
-              ExecStart = [
-                "${lib.getExe failureRecorder} %i"
-                "${lib.getExe gatusPushScript} false %i 'backup job %i failed on ${config.networking.hostName}'"
-              ];
-              UMask = "0077";
-              ReadWritePaths = [ stagingRoot ];
-              ReadOnlyPaths = [ config.sops.secrets."backup/gatusToken".path ];
-              ProtectSystem = "strict";
-              ProtectHome = true;
-              PrivateTmp = true;
-              NoNewPrivileges = true;
-            };
+          "backup-failed@" = mkOutcomeService {
+            outcome = "failed";
+            recorder = failureRecorder;
+            gatusArgs = "false %i 'backup job %i failed on ${config.networking.hostName}'";
           };
         };
 
@@ -422,11 +421,7 @@ in
 
     assertions = [
       {
-        assertion =
-          let
-            slots = lib.mapAttrsToList (_: job: job.at) cfg.jobs;
-          in
-          lib.length (lib.unique slots) == lib.length slots;
+        assertion = !(hasDuplicateTimeSlot cfg.jobs);
         message = "homelab.backup.jobs on ${config.networking.hostName} share a slot";
       }
     ]

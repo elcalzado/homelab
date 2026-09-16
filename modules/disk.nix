@@ -65,6 +65,72 @@ let
       size = "100%";
     };
   };
+
+  resolveDisks =
+    { userDisks, defaultDevice }:
+    if userDisks != { } then userDisks else { default = defaultDevice; };
+
+  resolvePartitions =
+    { userPartitions, defaultPartitions }:
+    if userPartitions != { } then userPartitions else defaultPartitions;
+
+  hasPartitionRole = role: partitions: partitions ? ${role};
+
+  stripHomeSubvolume =
+    rootContent:
+    rootContent
+    // {
+      subvolumes = lib.removeAttrs (rootContent.subvolumes or { }) [ "/home" ];
+    };
+
+  resolveRoleContent =
+    { roleContent, partitions }:
+    if hasPartitionRole "home" partitions then
+      roleContent // { root = stripHomeSubvolume roleContent.root; }
+    else
+      roleContent;
+
+  partitionsAssignedToDisk =
+    diskName: partitions: lib.filterAttrs (_: partition: partition.disk == diskName) partitions;
+
+  wholeDiskAsDataPartition = {
+    data = {
+      size = "100%";
+    };
+  };
+
+  partitionsForDisk =
+    diskName: partitions:
+    let
+      assigned = partitionsAssignedToDisk diskName partitions;
+    in
+    if assigned == { } then wholeDiskAsDataPartition else assigned;
+
+  partitionTypeCode = role: if role == "boot" then "EF00" else null;
+
+  mkPartitionSpec =
+    roleContent: role: partitionCfg:
+    let
+      content = roleContent.${role} or { };
+      type = partitionTypeCode role;
+    in
+    {
+      inherit (partitionCfg) size;
+    }
+    // lib.optionalAttrs (type != null) { inherit type; }
+    // lib.optionalAttrs (content != { }) { inherit content; };
+
+  mkDiskEntry = roleContent: partitions: diskName: device: {
+    type = "disk";
+    inherit device;
+    content = {
+      type = "gpt";
+      partitions = lib.mapAttrs (mkPartitionSpec roleContent) (partitionsForDisk diskName partitions);
+    };
+  };
+
+  definesNamedDisksWithoutPartitions =
+    disks: partitions: disks != { } && partitions == { } && !(disks ? "default");
 in
 {
   imports = [ inputs.disko.nixosModules.disko ];
@@ -93,73 +159,30 @@ in
     assertions = [
       {
         assertion =
-          !(
-            targetConfig.diskLayout.disks or { } != { }
-            && targetConfig.diskLayout.partitions or { } == { }
-            && !((targetConfig.diskLayout.disks or { }) ? "default")
-          );
+          !(definesNamedDisksWithoutPartitions (targetConfig.diskLayout.disks or { }) (
+            targetConfig.diskLayout.partitions or { }
+          ));
         message = "When defining diskLayout.disks without a 'default' disk, you must also define diskLayout.partitions.";
       }
     ];
 
     disko.devices.disk =
       let
-        defaultDevice = config.homelab.disk.defaultDevice;
+        effectiveDisks = resolveDisks {
+          userDisks = targetConfig.diskLayout.disks or { };
+          defaultDevice = config.homelab.disk.defaultDevice;
+        };
 
-        userDisks = targetConfig.diskLayout.disks or { };
-        userPartitions = targetConfig.diskLayout.partitions or { };
+        effectivePartitions = resolvePartitions {
+          userPartitions = targetConfig.diskLayout.partitions or { };
+          inherit defaultPartitions;
+        };
 
-        effectiveDisks = if userDisks != { } then userDisks else { default = defaultDevice; };
-        effectivePartitions = if userPartitions != { } then userPartitions else defaultPartitions;
-
-        hasHomePartition = effectivePartitions ? "home";
-
-        effectiveRoleContent =
-          if hasHomePartition then
-            config.homelab.disk.roleContent
-            // {
-              root = config.homelab.disk.roleContent.root // {
-                subvolumes = lib.removeAttrs (config.homelab.disk.roleContent.root.subvolumes or { }) [ "/home" ];
-              };
-            }
-          else
-            config.homelab.disk.roleContent;
-
-        diskEntry =
-          diskName: device:
-          let
-            assignedPartitions = lib.filterAttrs (_: p: p.disk == diskName) effectivePartitions;
-
-            finalPartitions =
-              if assignedPartitions == { } then
-                {
-                  data = {
-                    size = "100%";
-                  };
-                }
-              else
-                assignedPartitions;
-          in
-          {
-            type = "disk";
-            inherit device;
-            content = {
-              type = "gpt";
-              partitions = lib.mapAttrs (
-                roleName: roleCfg:
-                let
-                  content = effectiveRoleContent.${roleName} or { };
-                  type = if roleName == "boot" then "EF00" else null;
-                in
-                {
-                  inherit (roleCfg) size;
-                }
-                // lib.optionalAttrs (type != null) { inherit type; }
-                // lib.optionalAttrs (content != { }) { inherit content; }
-              ) finalPartitions;
-            };
-          };
+        effectiveRoleContent = resolveRoleContent {
+          roleContent = config.homelab.disk.roleContent;
+          partitions = effectivePartitions;
+        };
       in
-      lib.mapAttrs diskEntry effectiveDisks;
+      lib.mapAttrs (mkDiskEntry effectiveRoleContent effectivePartitions) effectiveDisks;
   };
 }

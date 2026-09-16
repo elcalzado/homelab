@@ -26,8 +26,26 @@ let
   profileDir = "/var/lib/qbittorrent";
   configDir = "${profileDir}/qBittorrent/config";
   resumeDir = "${profileDir}/qBittorrent/data/BT_backup";
-  configFile = "${configDir}/qBittorrent.conf";
   scanLog = "/var/log/qbittorrent/clamav_scan.log";
+
+  webuiConfFile = "${configDir}/qBittorrent.conf";
+  webuiPasswordPlaceholder = "@qbittorrent-webui-passwordHash@";
+  webuiApiKeyPlaceholder = "@qbittorrent-webui-apiKey@";
+
+  injectWebuiCredentials = pkgs.writeShellApplication {
+    name = "qbittorrent-inject-webui-credentials";
+    runtimeInputs = [ pkgs.coreutils ];
+    text = ''
+      conf=${lib.escapeShellArg webuiConfFile}
+      password_hash=$(cat ${lib.escapeShellArg config.sops.secrets."webui/passwordHash".path})
+      api_key=$(cat ${lib.escapeShellArg config.sops.secrets."webui/apiKey".path})
+
+      content=$(cat "$conf")
+      content=''${content//${webuiPasswordPlaceholder}/$password_hash}
+      content=''${content//${webuiApiKeyPlaceholder}/$api_key}
+      printf '%s\n' "$content" > "$conf"
+    '';
+  };
 
   clamavScan = pkgs.writeShellApplication {
     name = "clamav_scan";
@@ -55,18 +73,6 @@ let
       ${builtins.readFile ../../scripts/qbittorrent/vpn-portforward.sh}
     '';
   };
-
-  # Declarative qBittorrent.conf, rendered from configs/qbittorrent/qBittorrent.conf
-  # with @TOKENS@ substituted.
-  qbtConfBody =
-    builtins.replaceStrings
-      [ "@CLAMAV_SCAN@" "@SAVE_DIR@" "@TEMP_DIR@" ]
-      [ (lib.getExe clamavScan) saveDir tempDir ]
-      (builtins.readFile ../../configs/qbittorrent/qBittorrent.conf);
-  # Guarantee a trailing newline so the WebUI password hash has its own line
-  qbtConfBase = pkgs.writeText "qBittorrent.conf" (
-    qbtConfBody + lib.optionalString (!lib.hasSuffix "\n" qbtConfBody) "\n"
-  );
 in
 {
   services = {
@@ -75,8 +81,36 @@ in
       group = "entertainment";
       inherit profileDir webuiPort;
       openFirewall = false;
-      # Left empty on purpose
-      serverConfig = { };
+      serverConfig = {
+        AutoRun = {
+          enabled = true;
+          program = "${lib.getExe clamavScan} \"%F\"";
+        };
+        BitTorrent = {
+          Session = {
+            DefaultSavePath = "${saveDir}";
+            TempPath = "${tempDir}";
+            TempPathEnabled = true;
+            MaxActiveDownloads = "24";
+            MaxActiveTorrents = "40";
+            MaxActiveUploads = "24";
+          };
+        };
+        LegalNotice = {
+          Accepted = true;
+        };
+        Network = {
+          PortForwardingEnabled = false;
+        };
+        Preferences = {
+          WebUI = {
+            Username = "guster";
+            Password_PBKDF2 = webuiPasswordPlaceholder;
+            APIKey = webuiApiKeyPlaceholder;
+            LocalHostAuth = false;
+          };
+        };
+      };
     };
 
     dnsmasq = {
@@ -136,6 +170,7 @@ in
           Restart = "always";
           RestartSec = 10;
           UMask = "0002";
+          ExecStartPre = lib.mkAfter [ (lib.getExe injectWebuiCredentials) ];
         };
         unitConfig.RequiresMountsFor = [ mountDir ];
         after = [
@@ -143,18 +178,6 @@ in
           "clamav-daemon.service"
         ];
         bindsTo = [ "clamav-daemon.service" ];
-        # Rewrite the config authoritatively on every start, then append the WebUI
-        # password hash and API key from the sops secrets.
-        restartTriggers = [ qbtConfBase ];
-        preStart = ''
-          ${pkgs.coreutils}/bin/install -m600 ${qbtConfBase} ${configFile}
-          printf 'WebUI\\Password_PBKDF2=%s\n' "$(${pkgs.coreutils}/bin/cat ${
-            config.sops.secrets."webui/passwordHash".path
-          })" >> ${configFile}
-          printf 'WebUI\\APIKey=%s\n' "$(${pkgs.coreutils}/bin/cat ${
-            config.sops.secrets."webui/apiKey".path
-          })" >> ${configFile}
-        '';
       };
 
       vpn-portforward = {
