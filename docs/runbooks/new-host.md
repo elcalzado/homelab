@@ -31,7 +31,7 @@ If this service will perform backups to the NAS, use the following command to po
 the SSH private key:
 
 ```bash
-sops set secrets/mainsail.yaml   '["backup"]["sshKey"]'   "$(jq -Rs . < /path/to/key)"
+sops set secrets/<host>.yaml   '["backup"]["sshKey"]'   "$(jq -Rs . < /path/to/key)"
 ```
 
 **Commit + push:**
@@ -152,57 +152,70 @@ For wireless targets create your temporary WLAN and place its information in the
 `default.nix`:
 
 ```nix
+# Comment out any secretsFile if set since wpa_supplicant will fail with it on before age key is in
 networking.wireless.networks."<your-ssid>".psk = "<your-psk>";
 ```
-
-Set a temporary `hashedPassword` for `guster` and comment out the `hashedPasswordFile`:
-
-```nix
-# hashedPasswordFile = config.sops.secrets."guster/passwordHash".path;
-hashedPassword = "<your-hash>";
-```
-
-This is needed regardless of the target being wired or wireless since you'll need `sudo` to install
-`/var/lib/sops-nix/key.txt`.
 
 ### 2b. Flash the image to the SD card
 
 Create an SD image:
 
 ```bash
-nix run --extra-experimental-features 'nix-command flakes' \
-  nixpkgs#nixos-rebuild-ng -- build-image \
-  --flake .#<host>-arm64-rpi \
-  --image-variant sd-card
+nix build .#installerImages.<host>-arm64-rpi
 ```
 
 Flash the image to your SD card:
 
 ```bash
-sudo dd if=result/sd-image/nixos-image-sd-card-*-aarch64-linux.img of=/dev/sdX bs=4096 conv=fsync status=progress
+sudo dd if=result/sd-image/nixos-image-<board>-<bootloader>.img of=/dev/sdX bs=4096 conv=fsync status=progress
 ```
 
-Make sure to revert the temporary changes made in step 2a.
-
-### 2c. Make the installer reachable
+### 2c. Install from your workstation
 
 Access the target over SSH and install `key.txt`:
 
 ```bash
 ssh guster@<host>.home.arpa
-
-sudo install -d -m700 /var/lib/sops-nix
-cat | sudo tee /var/lib/sops-nix/key.txt           # paste key, then Ctrl-D
-sudo chmod 600 /var/lib/sops-nix/key.txt
+sudo passwd root                          # temp root password
 ```
 
-### 2d. Install from your workstation
+#### Non-disko
+
+On target over SSH:
+
+```bash
+install -d -m700 /var/lib/sops-nix
+cat > /var/lib/sops-nix/key.txt           # paste key, then Ctrl-D
+chmod 600 /var/lib/sops-nix/key.txt
+```
+
+On workstation:
 
 ```bash
 nix run --extra-experimental-features 'nix-command flakes' \
-  nixpkgs#nixos-rebuild-ng -- switch \
-  --flake .#<host>-arm64-rpi \
-  --target-host guster@<host>.home.arpa --sudo --ask-sudo-password
+  nixpkgs#nixos-rebuild-ng -- switch                       \
+  --flake .#<host>-arm64-rpi                               \
+  --target-host root@<host-ip>
+```
+
+#### Disko
+
+For hosts that use sops, hand the age key to the installer so it's present on
+first boot:
+
+```bash
+mkdir -p /tmp/extra/var/lib/sops-nix && cp /path/to/key.txt /tmp/extra/var/lib/sops-nix/key.txt
+```
+
+The following command partitions the disk, installs the whole config, and reboots:
+
+```bash
+nix run --extra-experimental-features "nix-command flakes" \
+  github:nix-community/nixos-anywhere --                   \
+  --flake .#<host>-arm64-rpi                               \
+  --build-on remote                                        \
+  --extra-files /tmp/extra                                 \
+  root@<host-ip>
 ```
 
 Jump to Step 3

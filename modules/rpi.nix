@@ -2,31 +2,69 @@
   inputs,
   lib,
   targetConfig,
+  isInstaller,
   ...
 }:
 let
-  profiles = {
-    rpi-zero2w = [ ];
-    rpi-4 = [ inputs.nixos-hardware.nixosModules.raspberry-pi-4 ];
-    rpi-5 = [ inputs.nixos-hardware.nixosModules.raspberry-pi-5 ];
-  };
-
   inherit (targetConfig) board;
   usbMode = targetConfig.usbMode or null;
   useDisko = targetConfig.useDisko or false;
+
+  boardModule =
+    {
+      rpi-zero2w = inputs.nixos-raspberrypi.nixosModules.raspberry-pi-02.base;
+      rpi-4 = inputs.nixos-raspberrypi.nixosModules.raspberry-pi-4.base;
+      rpi-5 = inputs.nixos-raspberrypi.nixosModules.raspberry-pi-5.base;
+    }
+    .${board};
+
+  bootloader =
+    {
+      rpi-zero2w = "uboot";
+      rpi-4 = "uboot";
+      rpi-5 = "kernel";
+    }
+    .${board};
 in
 {
-  imports = profiles.${board} ++ [ ./disk.nix ];
+  imports = [
+    boardModule
+    ./disk.nix
+  ]
+  ++ lib.optionals (!isInstaller) [
+    inputs.nixos-raspberrypi.lib.inject-overlays
+  ];
 
-  boot.loader.grub.enable = false;
-  boot.loader.generic-extlinux-compatible.enable = true;
-
-  hardware.enableRedistributableFirmware = true;
-
-  fileSystems."/boot" = {
-    device = "/dev/disk/by-label/FIRMWARE";
-    fsType = "vfat";
+  boot = {
+    loader.raspberry-pi = {
+      inherit bootloader;
+      firmwarePath = "/boot/firmware";
+    };
+    zfs.forceImportRoot = false;
   };
+
+  hardware.raspberry-pi.config.all = {
+    dt-overlays = {
+      # Workaround to get Zero 2W to boot; unsure what the cause is though
+      vc4-kms-v3d = lib.mkIf (board == "rpi-zero2w") {
+        enable = false;
+      };
+      # To enable UART serial console; rpi-4 may need the same option
+      miniuart-bt = lib.mkIf (board == "rpi-zero2w") {
+        enable = true;
+      };
+      dwc2 = lib.mkIf (board == "rpi-zero2w" && usbMode != null) {
+        enable = true;
+        params.dr_mode = {
+          enable = true;
+          value = usbMode;
+        };
+      };
+    };
+  };
+
+  # UART console for rpi-zero2w
+  boot.kernelParams = lib.mkIf (board == "rpi-zero2w") [ "console=ttyAMA0,115200n8" ];
 
   fileSystems."/" = lib.mkIf (!useDisko) {
     device = "/dev/disk/by-label/NIXOS_SD";
@@ -36,35 +74,16 @@ in
   homelab.disk = {
     enable = useDisko;
     defaultDevice = lib.mkDefault "/dev/mmcblk0";
-    roleContent = {
-      root = lib.mkDefault {
-        type = "filesystem";
-        format = "ext4";
-        mountpoint = "/";
-        mountOptions = [ "noatime" ];
-      };
+    roleContent.root = lib.mkDefault {
+      type = "filesystem";
+      format = "ext4";
+      mountpoint = "/";
+      mountOptions = [ "noatime" ];
     };
   };
 
-  hardware.deviceTree.overlays = lib.optionals (board == "rpi-zero2w" && usbMode != null) [
-    {
-      name = "dwc2-mode";
-      dtsText = ''
-        /dts-v1/;
-        /plugin/;
-
-        / {
-          compatible = "raspberrypi,model-zero-2-w", "brcm,bcm2837";
-        };
-
-        &{/soc/usb@7e980000} {
-          dr_mode = "${usbMode}";
-        };
-      '';
-    }
-  ];
-  # Future overlays can be added here with their own conditions
-  # ++ lib.optionals (board == "some" && someOtherFlag) [ ... ]
+  # nvmd/nixos-raspberrypi sets this to true and uses iwd
+  networking.networkmanager.enable = lib.mkForce false;
 
   assertions = [
     {

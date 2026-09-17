@@ -10,14 +10,21 @@
     disko.inputs.nixpkgs.follows = "nixpkgs";
     deploy-rs.url = "github:serokell/deploy-rs";
     deploy-rs.inputs.nixpkgs.follows = "nixpkgs";
-    nixos-hardware.url = "github:NixOS/nixos-hardware";
-    nixos-hardware.inputs.nixpkgs.follows = "nixpkgs-unstable";
+    nixos-raspberrypi.url = "github:nvmd/nixos-raspberrypi/main";
+  };
+
+  nixConfig = {
+    extra-substituters = [ "https://nixos-raspberrypi.cachix.org" ];
+    extra-trusted-public-keys = [
+      "nixos-raspberrypi.cachix.org-1:4iMO9LXa8BqhU+Rpg6LQKiGa2lsNh/j2oiYLNOQ5sPI="
+    ];
   };
 
   outputs =
     {
       nixpkgs,
       nixpkgs-unstable,
+      nixos-raspberrypi,
       deploy-rs,
       ...
     }@inputs:
@@ -33,7 +40,10 @@
         channel: system: modules: targetConfig:
         channel.lib.nixosSystem {
           modules = modules ++ [ { nixpkgs.hostPlatform = system; } ];
-          specialArgs = { inherit inputs targetConfig; };
+          specialArgs = {
+            inherit inputs targetConfig nixos-raspberrypi;
+            isInstaller = false;
+          };
         };
 
       systemOf = cfg: cfg.config.nixpkgs.hostPlatform.system;
@@ -92,7 +102,7 @@
         if builtins.isAttrs meta then
           meta
         else
-          throw "hosts/${name}/meta.nix must evaluate to a plain attrset, not a function or other value";
+          throw "hosts/${name}/meta.nix must evaluate to a plain attrset";
 
       hostMeta = lib.genAttrs hostNames loadHostMeta;
 
@@ -116,7 +126,6 @@
       hosts = lib.foldl' (acc: name: acc // mkHost name) { } hostNames;
 
       backupJobNamesOf = host: lib.attrNames (host.config.homelab.backup.jobs or { });
-
       allBackupJobs = lib.unique (lib.concatLists (lib.mapAttrsToList (_: backupJobNamesOf) hosts));
 
       primaryAddressOf =
@@ -152,16 +161,48 @@
       );
 
       hostsBySystem = lib.groupBy (name: systemOf hosts.${name}) (lib.attrNames hosts);
-
       toplevelChecksFor = names: lib.genAttrs names (name: hosts.${name}.config.system.build.toplevel);
+
+      installerImages = lib.listToAttrs (
+        lib.concatMap (
+          name:
+          let
+            meta = hostMeta.${name};
+            boardTargets = lib.filter (t: (meta.targets.${t}.board or null) != null) (
+              lib.attrNames meta.targets
+            );
+          in
+          map (
+            target:
+            let
+              targetConfig = meta.targets.${target};
+              spec = targetSpecs.${target};
+            in
+            lib.nameValuePair "${name}-${target}"
+              (nixos-raspberrypi.lib.nixosInstaller {
+                specialArgs = {
+                  inherit inputs targetConfig nixos-raspberrypi;
+                  isInstaller = true;
+                };
+                modules = [
+                  ./hosts/${name}
+                  { nixpkgs.hostPlatform = spec.system; }
+                  {
+                    services.openssh.settings.PermitRootLogin = lib.mkForce "yes";
+                    services.openssh.settings.PasswordAuthentication = lib.mkForce true;
+                  }
+                ]
+                ++ spec.modules;
+              }).config.system.build.sdImage
+          ) boardTargets
+        ) hostNames
+      );
     in
     {
       nixosConfigurations = hosts;
-
       deploy = { inherit nodes; };
-
       backupJobs = allBackupJobs;
-
+      inherit installerImages;
       checks = lib.mapAttrs (
         system: names: toplevelChecksFor names // deploy-rs.lib.${system}.deployChecks { inherit nodes; }
       ) hostsBySystem;
