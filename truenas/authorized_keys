@@ -1,3 +1,6 @@
+restrict,command="rrsync -wo /mnt/blueberry/backups/proxmox/pve1" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHBxfiSQH/7SRDehOmp4puYvHiX4aLrDaGt5Xg0PcOVp backup@pve1
+restrict,command="rrsync -wo /mnt/blueberry/backups/proxmox/pve2" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOJZMvPxWwm3uRpemb8Y1lFtSwh//ZlqiyEBADKsvLs7 backup@pve2
+restrict,command="rrsync -wo /mnt/blueberry/backups/proxmox/pve3" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAID3TA4qmSZVpotqSsuE506UgArBb0mz3X/S9POsyKAs3 backup@pve3
 restrict,command="rrsync -wo /mnt/blueberry/backups/jellyfin" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJpjlLmXPUOiShYbb1J2lvLWfac1Yothu1xUPW++W3bj backup@jellyfin
 restrict,command="rrsync -wo /mnt/blueberry/backups/omada" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDgSY3Ff0em4qIqDIgNvx9syvQpD9veUQJeC8B40cUb7 backup@omada
 restrict,command="rrsync -wo /mnt/blueberry/backups/qbittorrent" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJ/TwhGCznEb0Kh8IRJ4wHq+k4lwlcQu3N2qU+/5wVRI backup@qbittorrent
