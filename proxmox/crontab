@@ -1,0 +1,1 @@
+0 6 * * * rsync -a --delete-after --max-delete=64 --timeout=300 --rsh="ssh -i /root/.ssh/id_ed25519_backup -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new" /etc/pve /etc/network /etc/hosts /etc/resolv.conf backups@truenas.home.arpa:. >> /var/log/backup.log 2>&1
