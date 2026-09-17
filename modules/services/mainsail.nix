@@ -1,8 +1,4 @@
-_:
-let
-  dataDir = "/var/lib/moonraker";
-in
-{
+_: {
   imports = [
     ../../configs/mainsail/klipper.nix
     ../../configs/mainsail/moonraker.nix
@@ -28,18 +24,6 @@ in
   services.klipper.group = "klipper";
 
   services.moonraker.group = "klipper";
-
-  homelab.backup.jobs.mainsail = {
-    at = "00:30";
-    databases = [
-      {
-        engine = "sqlite";
-        path = "${dataDir}/database/moonraker-sql.db";
-      }
-    ];
-    trees = [ "${dataDir}/gcodes" ];
-    mayBeEmpty = [ "${dataDir}/gcodes" ];
-  };
 
   networking.firewall.allowedTCPPorts = [ 80 ];
 }
