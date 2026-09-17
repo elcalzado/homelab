@@ -99,18 +99,34 @@ print(json.dumps([h for h in hosts if h['host'] in changed]))
 }
 
 lint_nix() {
-  run_tool deadnix --fail .
-  run_tool statix check .
+  local files
+  if [ -n "${STAGED_DIR:-}" ]; then
+    mapfile -t files < <(git -C "$root" diff --cached --name-only --diff-filter=ACM -- '*.nix')
+  else
+    files=(.)
+  fi
+  [ "${#files[@]}" -eq 0 ] && return 0
+  run_tool deadnix --fail "${files[@]}"
+  # statix check only takes a single target, so it can't take the whole array at once.
+  local f
+  for f in "${files[@]}"; do
+    run_tool statix check "$f"
+  done
 }
 
 run_shellcheck() {
-  local f complete fragments
+  local f complete fragments files
   complete=()
   fragments=()
+  if [ -n "${STAGED_DIR:-}" ]; then
+    mapfile -t files < <(git -C "$root" diff --cached --name-only --diff-filter=ACM -- '*.sh')
+  else
+    mapfile -t files < <(git -C "$root" ls-files '*.sh')
+  fi
   # Shebang-less files are writeShellApplication fragments (Nix adds the shebang + vars): relax SC2148/SC2154.
-  while IFS= read -r f; do
+  for f in "${files[@]}"; do
     if [ "$(head -c2 "$f")" = '#!' ]; then complete+=("$f"); else fragments+=("$f"); fi
-  done < <(git -C "$root" ls-files '*.sh')
+  done
   if [ "${#complete[@]}" -gt 0 ]; then
     run_tool shellcheck "${complete[@]}"
   fi
@@ -172,5 +188,5 @@ case "${1:-all}" in
   secrets-history)      scan_secrets_history ;;
   validate-ssh-keys)    validate_ssh_keys ;;
   all)                  eval_hosts; eval_nodes; lint_nix; run_shellcheck; scan_secrets ;;
-  *)                    echo "usage: $0 [eval|build [host|node]|list|lint|shellcheck|secrets|secrets-history|all]" >&2; exit 2 ;;
+  *)                    echo "usage: $0 [eval_hosts|eval_nodes|build [host]|list|compare <ref>|lint|shellcheck|secrets|secrets-history|validate-ssh-keys|all]" >&2; exit 2 ;;
 esac
