@@ -1,15 +1,8 @@
 #!/usr/bin/env bash
-# Repo checks shared by CI (.github/workflows/ci.yml) and the git pre-commit hook
-# (scripts/git-hooks/pre-commit), so the two don't drift.
-#
-# Usage: scripts/checks.sh [eval|build [host]|list|lint|shellcheck|secrets|secrets-history|all]
-#        (default: all except `build`, it needs a Linux builder and is CI-only)
-#
-# Everything runs through nix, so the only prerequisite is Nix with flakes.
+
 set -euo pipefail
 
-root="$(git rev-parse --show-toplevel)"
-cd "$root"
+root="${REPO_ROOT:-$(git rev-parse --show-toplevel)}"
 
 nix_() { nix --extra-experimental-features 'nix-command flakes' "$@"; }
 
@@ -70,7 +63,7 @@ drvpaths_at_ref() {
   local ref="$1"
   local wt
   wt="$(mktemp -d)"
-  git worktree add --quiet --detach "$wt" "$ref"
+  git -C "$root" worktree add --quiet --detach "$wt" "$ref"
   (
     cd "$wt"
     list_hosts | python3 -c 'import json,sys; [print(h["host"]) for h in json.load(sys.stdin)]' \
@@ -80,10 +73,10 @@ drvpaths_at_ref() {
         printf '%s %s\n' "$name" "$drv"
       done
   )
-  git worktree remove --force "$wt"
+  git -C "$root" worktree remove --force "$wt"
 }
 
-affected_hosts() {
+compare_hosts() {
   local base="$1"
   local before after changed
 
@@ -117,7 +110,7 @@ run_shellcheck() {
   # Shebang-less files are writeShellApplication fragments (Nix adds the shebang + vars): relax SC2148/SC2154.
   while IFS= read -r f; do
     if [ "$(head -c2 "$f")" = '#!' ]; then complete+=("$f"); else fragments+=("$f"); fi
-  done < <(git ls-files '*.sh')
+  done < <(git -C "$root" ls-files '*.sh')
   if [ "${#complete[@]}" -gt 0 ]; then
     run_tool shellcheck "${complete[@]}"
   fi
@@ -134,16 +127,50 @@ scan_secrets_history() {
   run_tool gitleaks detect --source . --redact --no-banner
 }
 
+validate_ssh_keys() {
+  overall=0
+  staged_secrets=$(git -C "$root" diff --cached --name-only -- "secrets/*.yaml")
+  for file in $staged_secrets; do
+    plain=$(mktemp)
+    chmod 600 "$plain"
+    sops -d "$file" > "$plain" 2>/dev/null
+
+    mapfile -t keys_b64 < <(
+      yq eval -o=json '[.. | select(tag == "!!map") | select(has("sshKey")) | .sshKey | select(. != null and . != "")]' "$plain" 2>/dev/null \
+        | jq -r '.[] | @base64'
+    )
+
+    if [ "${#keys_b64[@]}" -eq 0 ]; then
+      printf 'NONE %s\n' "$file"
+    else
+      status=OK
+      for enc in "${keys_b64[@]}"; do
+        tmp=$(mktemp)
+        chmod 600 "$tmp"
+        base64 -d <<< "$enc" > "$tmp"
+        ssh-keygen -y -f "$tmp" >/dev/null 2>&1 || status=BAD
+        rm -f "$tmp"
+      done
+      printf '%s %s\n' "$status" "$file"
+      [ "$status" = BAD ] && overall=1
+    fi
+
+    rm -f "$plain"
+  done
+  exit "$overall"
+}
+
 case "${1:-all}" in
-  eval_hosts)      eval_hosts ;;
-  eval_nodes)      eval_nodes ;;
-  build)           build_hosts "${@:2}" ;;
-  list)            list_hosts ;;
-  affected)        affected_hosts "${2:?base ref required}" ;;
-  lint)            lint_nix ;;
-  shellcheck)      run_shellcheck ;;
-  secrets)         scan_secrets ;;
-  secrets-history) scan_secrets_history ;;
-  all)             eval_hosts; eval_nodes; lint_nix; run_shellcheck; scan_secrets ;;
-  *)               echo "usage: $0 [eval|build [host]|list|lint|shellcheck|secrets|secrets-history|all]" >&2; exit 2 ;;
+  eval_hosts)           eval_hosts ;;
+  eval_nodes)           eval_nodes ;;
+  build)                build_hosts "${@:2}" ;;
+  list)                 list_hosts ;;
+  compare)              compare_hosts "${2:?base ref required}" ;;
+  lint)                 lint_nix ;;
+  shellcheck)           run_shellcheck ;;
+  secrets)              scan_secrets ;;
+  secrets-history)      scan_secrets_history ;;
+  validate-ssh-keys)    validate_ssh_keys ;;
+  all)                  eval_hosts; eval_nodes; lint_nix; run_shellcheck; scan_secrets ;;
+  *)                    echo "usage: $0 [eval|build [host|node]|list|lint|shellcheck|secrets|secrets-history|all]" >&2; exit 2 ;;
 esac

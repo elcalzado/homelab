@@ -10,7 +10,6 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
-# Every job installs Nix and runs the same scripts/checks.sh the pre-commit hook uses.
 jobs:
   eval_hosts:
     name: nix eval (every host, all architectures)
@@ -41,7 +40,7 @@ jobs:
       - id: list
         run: |
           set -eo pipefail
-          hosts=$(./scripts/checks.sh affected '${{ github.event.pull_request.base.sha }}')
+          hosts=$(./scripts/checks.sh compare '${{ github.event.pull_request.base.sha }}')
           echo "$hosts" | python3 -c 'import json,sys; json.load(sys.stdin)'
           hosts=$(printf '%s' "$hosts" | python3 -c 'import json,sys; print(json.dumps([dict(h, runner="ubuntu-24.04-arm" if h["system"] == "aarch64-linux" else "ubuntu-latest") for h in json.load(sys.stdin)]))')
           echo "hosts=$hosts" >> "$GITHUB_OUTPUT"
