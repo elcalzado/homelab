@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repo_root="$(git rev-parse --show-toplevel)"
+repo_root="${REPO_ROOT:-$(git rev-parse --show-toplevel)}"
+staged_root="${STAGED_DIR:-$repo_root}"
 output_file="$repo_root/configs/gatus/backup-jobs.nix"
 
-jobs_json="$(nix eval --json .#backupJobs)"
+jobs_json="$(nix eval --json "$staged_root#backupJobs")"
 
 {
   echo "["
@@ -12,4 +13,4 @@ jobs_json="$(nix eval --json .#backupJobs)"
   echo "]"
 } > "$output_file"
 
-git add "$output_file"
+git -C "$repo_root" add "$output_file"

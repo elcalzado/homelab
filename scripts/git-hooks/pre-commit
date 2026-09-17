@@ -12,12 +12,13 @@ if [[ -n "$STAGED_NIX_FILES" ]]; then
   echo "$STAGED_NIX_FILES" | xargs git add
 fi
 
-"$REPO_ROOT/scripts/update-workflows.sh"
-"$REPO_ROOT/scripts/update-backup-jobs.sh"
-
 STAGED_DIR=$(mktemp -d)
 trap 'rm -rf "$STAGED_DIR"' EXIT
 git checkout-index --prefix="$STAGED_DIR/" --all
+export STAGED_DIR
+
+"$REPO_ROOT/scripts/update-workflows.sh"
+"$REPO_ROOT/scripts/update-backup-jobs.sh"
 
 cd "$STAGED_DIR"
 
