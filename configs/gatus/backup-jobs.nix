@@ -3,7 +3,6 @@
   "home-assistant"
   "immich"
   "jellyfin"
-  "mainsail"
   "nextcloud"
   "omada"
   "portainer"

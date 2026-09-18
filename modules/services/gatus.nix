@@ -160,12 +160,6 @@ in
         })
 
         (web {
-          name = "mainsail";
-          group = "other";
-          url = "http://mainsail.home.arpa";
-        })
-
-        (web {
           name = "glance";
           group = "management";
           url = "http://glance.home.arpa:8080";
