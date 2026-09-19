@@ -3,6 +3,7 @@
 let
   stateDir = "/var/lib/portainer-edge-agent";
   dataDir = "${stateDir}/data";
+  volumeDir = "/var/lib/containers/storage/volumes";
 in
 {
   virtualisation = {
@@ -40,8 +41,11 @@ in
     "d ${dataDir}  0700 root root -"
   ];
 
-  homelab.backup.jobs.portainer-edge-agent = {
+  homelab.backup.jobs."${config.networking.hostName}-portainer" = {
     at = "01:10";
-    trees = [ dataDir ];
+    trees = [
+      dataDir
+      volumeDir
+    ];
   };
 }

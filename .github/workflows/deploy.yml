@@ -15,6 +15,7 @@ on:
           - immich
           - jellyfin
           - mainsail
+          - minebox
           - nextcloud
           - omada
           - portainer

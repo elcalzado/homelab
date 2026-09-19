@@ -3,6 +3,7 @@
   "home-assistant"
   "immich"
   "jellyfin"
+  "minebox-portainer"
   "nextcloud"
   "omada"
   "portainer"
