@@ -30,7 +30,7 @@ from one definition.
 
 | Name           | Address       | Platform |
 |----------------|---------------|----------|
-| omada          | `10.0.10.2`   | LXC      |
+| manager        | `10.0.10.2`   | RPI      |
 | mainsail       | `10.0.30.4`   | RPI      |
 | qbittorrent    | `10.0.30.5`   | VM       |
 | glance         | `10.0.30.6`   | LXC      |
@@ -43,3 +43,4 @@ from one definition.
 | builder        | `10.0.30.13`  | VM       |
 | nextcloud      | `10.0.30.14`  | VM       |
 | home-assistant | `10.0.30.15`  | LXC      |
+| minebox        | `10.0.50.3`   | VM       |
