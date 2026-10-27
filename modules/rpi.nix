@@ -66,10 +66,16 @@ in
   # UART console for rpi-zero2w
   boot.kernelParams = lib.mkIf (board == "rpi-zero2w") [ "console=ttyAMA0,115200n8" ];
 
-  fileSystems."/boot/firmware" = {
+  fileSystems."/boot/firmware" = lib.mkIf (!useDisko) {
     device = "/dev/disk/by-label/FIRMWARE";
     fsType = "vfat";
     options = [ "umask=0077" ];
+  };
+
+  disko.devices.nodev."/boot/firmware" = lib.mkIf useDisko {
+    fsType = "vfat";
+    device = "/dev/disk/by-label/FIRMWARE";
+    mountOptions = [ "umask=0077" ];
   };
 
   fileSystems."/" = lib.mkIf (!useDisko) {
