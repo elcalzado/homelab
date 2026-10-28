@@ -15,9 +15,9 @@ on:
           - immich
           - jellyfin
           - mainsail
+          - manager
           - minebox
           - nextcloud
-          - omada
           - portainer
           - qbittorrent
           - runner

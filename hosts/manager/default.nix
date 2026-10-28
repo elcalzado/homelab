@@ -1,14 +1,12 @@
-{ lib, ... }:
+{ ... }:
 {
   imports = [
     ../../modules/common.nix
     ../../modules/services/omada.nix
   ];
 
-  nixpkgs.config.allowUnfreePredicate = pkg: lib.getName pkg == "mongodb-ce";
-
   networking = {
-    hostName = "omada";
+    hostName = "manager";
     usePredictableInterfaceNames = false;
     interfaces.eth0.ipv4.addresses = [
       {
@@ -23,7 +21,7 @@
     nameservers = [ "10.0.10.1" ];
   };
 
-  sops.defaultSopsFile = ../../secrets/omada.yaml;
+  sops.defaultSopsFile = ../../secrets/manager.yaml;
 
   system.stateVersion = "26.05";
 }

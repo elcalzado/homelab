@@ -17,11 +17,6 @@ creation_rules:
       age1tzx8y5rmys04ylztsqxyv4f2xwmhudelxme8nfaydxx7sj9ke4hqe7l8fa,
       age1sv5zehntfzq7llmvp3ax80604zw0xq6ldkhyqeg0ut5729ktvddsg87wah
 
-  - path_regex: secrets/omada\.yaml$
-    age: >-
-      age1s5339c66nxkywz2xwf388e2x6la35057e5qxnmrv3km5h22pxcuqungaag,
-      age1sv5zehntfzq7llmvp3ax80604zw0xq6ldkhyqeg0ut5729ktvddsg87wah
-
   - path_regex: secrets/qbittorrent\.yaml$
     age: >-
       age1ecm8faa7dk6m77stglxhnurxhc38jandmp8l4a6wr2ch56athensrxdj2h,
@@ -72,11 +67,15 @@ creation_rules:
       age15ng99q2jp9cappflynq4ejh3jvvefre7s0t3k9nwr3k0f6s2aq8qttr4mu,
       age1sv5zehntfzq7llmvp3ax80604zw0xq6ldkhyqeg0ut5729ktvddsg87wah
 
+  - path_regex: secrets/manager\.yaml$
+    age: >-
+      age13dxd67hyw3nvw87hqxh0mfy224rn8amm84wel394e70692tnw59s59ap3f,
+      age1sv5zehntfzq7llmvp3ax80604zw0xq6ldkhyqeg0ut5729ktvddsg87wah
+
   - path_regex: secrets/backups\.yaml$
     age: >-
       age1wfqvhv4dhk2tk56fpcjzzg5q4s7p3nqe9fq6jrdd75rsvlp5kvdqr9vhpl,
       age1tzx8y5rmys04ylztsqxyv4f2xwmhudelxme8nfaydxx7sj9ke4hqe7l8fa,
-      age1s5339c66nxkywz2xwf388e2x6la35057e5qxnmrv3km5h22pxcuqungaag,
       age1ecm8faa7dk6m77stglxhnurxhc38jandmp8l4a6wr2ch56athensrxdj2h,
       age19z3xd6a6ahv5ganss5ps33fcy2wjzh55jegj3gh8ed75ls4xndhqlscu3x,
       age1v0u0muj6krza9dz83wdfgzw3x89ty4kak2hw6r28d9q02q3h4fmssdq2aa,
@@ -84,4 +83,5 @@ creation_rules:
       age1ngnlnwd8un6n2p7gfd0azeet0j28p9t5s6tmg3fr047us9ay5shqst9uaa,
       age1v2ask75at0qrazv7nnx0j4jq54kevdmdqw2w776aanmnjlrnzu0qc3slxa,
       age15ng99q2jp9cappflynq4ejh3jvvefre7s0t3k9nwr3k0f6s2aq8qttr4mu,
+      age13dxd67hyw3nvw87hqxh0mfy224rn8amm84wel394e70692tnw59s59ap3f,
       age1sv5zehntfzq7llmvp3ax80604zw0xq6ldkhyqeg0ut5729ktvddsg87wah

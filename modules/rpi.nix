@@ -8,7 +8,7 @@
 let
   inherit (targetConfig) board;
   usbMode = targetConfig.usbMode or null;
-  useDisko = targetConfig.useDisko or false;
+  useDisko = !isInstaller && (targetConfig.useDisko or false);
 
   boardModule =
     {
@@ -65,6 +65,18 @@ in
 
   # UART console for rpi-zero2w
   boot.kernelParams = lib.mkIf (board == "rpi-zero2w") [ "console=ttyAMA0,115200n8" ];
+
+  fileSystems."/boot/firmware" = lib.mkIf (!useDisko) {
+    device = "/dev/disk/by-label/FIRMWARE";
+    fsType = "vfat";
+    options = [ "umask=0077" ];
+  };
+
+  disko.devices.nodev."/boot/firmware" = lib.mkIf useDisko {
+    fsType = "vfat";
+    device = "/dev/disk/by-label/FIRMWARE";
+    mountOptions = [ "umask=0077" ];
+  };
 
   fileSystems."/" = lib.mkIf (!useDisko) {
     device = "/dev/disk/by-label/NIXOS_SD";
