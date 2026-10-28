@@ -18,7 +18,6 @@ on:
           - manager
           - minebox
           - nextcloud
-          - omada
           - portainer
           - qbittorrent
           - runner
