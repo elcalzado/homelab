@@ -1,8 +1,5 @@
 # Runbook: Update / upgrade (`flake.lock`)
 
-`flake.lock` pins every input to an exact commit. Updating the lock changes no
-running machine — deploying does.
-
 ---
 
 ## 1. Bump the lock
@@ -17,8 +14,6 @@ nix flake update nixpkgs         # or one only
 git commit -am "flake.lock: update inputs"
 git push -u origin update-inputs
 ```
-
-Open a PR. CI builds every host; merge only when green.
 
 ## Bump to a new NixOS release
 
@@ -36,8 +31,6 @@ Actions → **deploy** → pick host → `dry-activate` → Run workflow.
 Approve when the `production` environment prompts.
 
 Review the `-- package changes --` diff in the log, then repeat with `switch`.
-
-One host at a time; hosts move independently.
 
 ### From the workstation instead
 
