@@ -2,6 +2,7 @@
 {
   imports = [
     ../../modules/common.nix
+    ../../modules/services/caddy.nix
   ];
 
   networking = {
