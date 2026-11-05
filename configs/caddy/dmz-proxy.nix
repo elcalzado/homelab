@@ -5,8 +5,8 @@ in
 {
   services.caddy = {
     virtualHosts = {
-      "dmz.guster.xyz".extraConfig = ''
-        respond "OK"
+      "coolify.guster.xyz".extraConfig = ''
+        reverse_proxy http://coolify.home.arpa:8000
 
         tls ${certloc}/${domain}/cert.pem ${certloc}/${domain}/key.pem {
           protocols tls1.3
