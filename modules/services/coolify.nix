@@ -93,4 +93,27 @@ in
         down
     '';
   };
+
+  users = {
+    groups.cooluser = { };
+    users.cooluser = {
+      isNormalUser = true;
+      group = "cooluser";
+      openssh.authorizedKeys.keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGtdAALxmQb8kE/NUjnQJoAy4LSjt4lHS6KFywVNSYfj"
+      ];
+    };
+  };
+
+  security.sudo.extraRules = [
+    {
+      users = [ "cooluser" ];
+      commands = [
+        {
+          command = "ALL";
+          options = [ "NOPASSWD" ];
+        }
+      ];
+    }
+  ];
 }
