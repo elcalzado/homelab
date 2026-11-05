@@ -9,6 +9,7 @@ on:
         type: choice
         options:
           - builder
+          - coolify
           - gatus
           - glance
           - home-assistant

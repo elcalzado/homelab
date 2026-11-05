@@ -127,7 +127,6 @@ The following command partitions the disk, installs the whole config, and reboot
 nix run --extra-experimental-features "nix-command flakes"  \
   github:nix-community/nixos-anywhere --                    \
   --flake .#<host>-amd64-vm                                 \
-  --build-on remote                                         \
   --extra-files /tmp/extra                                  \
   root@<host-ip>
 ```
@@ -244,7 +243,8 @@ From workstation (builds on builder):
 nix run --extra-experimental-features 'nix-command flakes' \
   nixpkgs#nixos-rebuild-ng -- switch \
   --flake .#<host>-<arch>-<platform> \
-  --target-host guster@<host>.home.arpa --sudo --ask-sudo-password
+  --target-host guster@<host>.home.arpa \
+  --sudo --ask-sudo-password
 ```
 
 ...or...
