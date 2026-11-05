@@ -139,8 +139,7 @@ Jump to Step 3
 ## Step 2 (Raspberry Pi) — Provision + first deploy
 
 If this is being done on the Raspberry Pi with no Ethernet, a temporary SSID and
-PSK must be used alongside a temporary admin user (`guster`) password to avoid
-leaking any secrets.
+PSK must be used.
 
 It's a chicken and the egg situation where we need the network to install the age key but
 the target needs the age key to decrypt the secrets and connect to the network. This can also be solved

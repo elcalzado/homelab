@@ -44,3 +44,4 @@ from one definition.
 | nextcloud      | `10.0.30.14`  | VM       |
 | home-assistant | `10.0.30.15`  | LXC      |
 | minebox        | `10.0.50.3`   | VM       |
+| worker         | `10.0.50.2`   | RPI      |
