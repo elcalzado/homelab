@@ -113,4 +113,9 @@ in
   environment.systemPackages = [
     (lib.hiPrio pkgs.procps)
   ];
+
+  homelab.backup.jobs.coolify = {
+    at = "00:50";
+    trees = [ "/data/coolify/backups" ];
+  };
 }
