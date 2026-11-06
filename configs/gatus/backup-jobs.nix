@@ -1,4 +1,5 @@
 [
+  "coolify"
   "gatus"
   "home-assistant"
   "immich"

@@ -77,6 +77,11 @@ creation_rules:
       age1l82yzk2py6eq92w5uzeax7995qnfyy0d5mjmzxhp4jlnv959da3q0fq8x4,
       age1sv5zehntfzq7llmvp3ax80604zw0xq6ldkhyqeg0ut5729ktvddsg87wah
 
+  - path_regex: secrets/coolify\.yaml$
+    age: >-
+      age1jx5y5l3waz6x7yptktww69ysgrmryr42wkh8scaq9cg0e9ann4qsgn3php,
+      age1sv5zehntfzq7llmvp3ax80604zw0xq6ldkhyqeg0ut5729ktvddsg87wah
+
   - path_regex: secrets/backups\.yaml$
     age: >-
       age1wfqvhv4dhk2tk56fpcjzzg5q4s7p3nqe9fq6jrdd75rsvlp5kvdqr9vhpl,
@@ -89,4 +94,5 @@ creation_rules:
       age1v2ask75at0qrazv7nnx0j4jq54kevdmdqw2w776aanmnjlrnzu0qc3slxa,
       age15ng99q2jp9cappflynq4ejh3jvvefre7s0t3k9nwr3k0f6s2aq8qttr4mu,
       age13dxd67hyw3nvw87hqxh0mfy224rn8amm84wel394e70692tnw59s59ap3f,
+      age1jx5y5l3waz6x7yptktww69ysgrmryr42wkh8scaq9cg0e9ann4qsgn3php,
       age1sv5zehntfzq7llmvp3ax80604zw0xq6ldkhyqeg0ut5729ktvddsg87wah
