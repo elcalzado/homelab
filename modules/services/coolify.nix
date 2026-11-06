@@ -57,14 +57,12 @@ in
     ];
     wants = [ "network-online.target" ];
     requires = [ "docker.service" ];
+
+    unitConfig.ConditionPathExists = "!${dataDir}/source/.env";
+
     path = [
       config.virtualisation.docker.package
       pkgs.coreutils
-    ];
-
-    restartTriggers = [
-      composeMain
-      composeProd
     ];
 
     serviceConfig = {
@@ -85,12 +83,6 @@ in
       docker compose --env-file .env \
         -f docker-compose.yml -f docker-compose.prod.yml \
         up -d --remove-orphans
-    '';
-
-    preStop = ''
-      docker compose --env-file .env \
-        -f docker-compose.yml -f docker-compose.prod.yml \
-        down
     '';
   };
 
