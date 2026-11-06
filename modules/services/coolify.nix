@@ -7,16 +7,6 @@
 
 let
   dataDir = "/data/coolify";
-
-  composeMain = pkgs.fetchurl {
-    url = "https://cdn.coollabs.io/coolify/docker-compose.yml";
-    hash = "sha256-JTLukljhCtTobLPCtGwp/pMp9aDazg99pBB0T+7Ceb0=";
-  };
-
-  composeProd = pkgs.fetchurl {
-    url = "https://cdn.coollabs.io/coolify/docker-compose.prod.yml";
-    hash = "sha256-TNAOg+EX6Efm1r3+ZPKi+Vi7CZZWksUjD6kjGgMV+A8=";
-  };
 in
 {
   virtualisation.docker = {
@@ -64,6 +54,7 @@ in
     path = [
       config.virtualisation.docker.package
       pkgs.coreutils
+      pkgs.curl
     ];
 
     serviceConfig = {
@@ -74,8 +65,9 @@ in
     };
 
     script = ''
-      install -m 0644 ${composeMain} docker-compose.yml
-      install -m 0644 ${composeProd} docker-compose.prod.yml
+      curl -fsSL -o docker-compose.yml https://cdn.coollabs.io/coolify/docker-compose.yml
+      curl -fsSL -o docker-compose.prod.yml https://cdn.coollabs.io/coolify/docker-compose.prod.yml
+      chmod 0644 docker-compose.yml docker-compose.prod.yml
       install -m 0600 ${config.sops.secrets."coolify-env".path} .env
 
       docker network inspect coolify >/dev/null 2>&1 \
@@ -116,6 +108,6 @@ in
 
   homelab.backup.jobs.coolify = {
     at = "00:50";
-    trees = [ "/data/coolify/backups" ];
+    trees = [ "${dataDir}/backups" ];
   };
 }
