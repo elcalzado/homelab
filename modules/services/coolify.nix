@@ -1,5 +1,6 @@
 {
   config,
+  lib,
   pkgs,
   ...
 }:
@@ -107,5 +108,9 @@ in
         }
       ];
     }
+  ];
+
+  environment.systemPackages = [
+    (lib.hiPrio pkgs.procps)
   ];
 }
