@@ -225,7 +225,7 @@ Jump to Step 3
 **1.** Add `<name>` to the `host` dropdown in `.github/workflows/deploy.yml`
 and `.github/workflows/rollback.yml`.
 
-**2.** Add the host to `docs/network.md` and the README table.
+**2.** Add the host to the README table.
 
 Commit and push, then deploy from `Actions` → `deploy` → `dry-activate`,
 then `switch`.

@@ -45,3 +45,4 @@ from one definition.
 | home-assistant | `10.0.30.15`  | LXC      |
 | minebox        | `10.0.50.3`   | VM       |
 | worker         | `10.0.50.2`   | RPI      |
+| coolify        | `10.0.50.4`   | VM       |
