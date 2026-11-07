@@ -4,6 +4,7 @@
     ../../modules/common.nix
     ../../modules/services/caddy.nix
     ../../configs/caddy/dmz-proxy.nix
+    ../../modules/services/velocity.nix
   ];
 
   networking = {
