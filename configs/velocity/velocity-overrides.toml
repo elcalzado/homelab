@@ -1,0 +1,25 @@
+bind = "0.0.0.0:25565"
+motd = "<bold><rainbow>Friendly Friends"
+online-mode = true
+player-info-forwarding-mode = "modern"
+forwarding-secret-file = "forwarding.secret"
+
+[servers]
+lobby = "minebox.home.arpa:25565"
+survival = "minebox.home.arpa:25566"
+creative = "minebox.home.arpa:25567"
+
+try = [
+    "lobby"
+]
+
+[forced-hosts]
+"lobby.mc.guster.xyz" = [
+    "lobby"
+]
+"survival.mc.guster.xyz" = [
+    "survival"
+]
+"creative.mc.guster.xyz" = [
+    "creative"
+]
