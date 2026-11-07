@@ -29,4 +29,6 @@ in
       home = "${dataDir}";
     };
   };
+
+  networking.firewall.allowedTCPPorts = [ 25565 ];
 }
