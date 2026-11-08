@@ -2,6 +2,7 @@
   config,
   pkgs,
   lib,
+  inputs,
   ...
 }:
 let
@@ -21,7 +22,7 @@ let
     '';
   };
 
-  package = pkgs.velocity;
+  package = inputs.nixpkgs-unstable.legacyPackages.${pkgs.stdenv.hostPlatform.system}.velocity;
 in
 {
   systemd.services.velocity = {
