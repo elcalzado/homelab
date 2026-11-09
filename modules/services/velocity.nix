@@ -23,6 +23,11 @@ let
   };
 
   package = inputs.nixpkgs-unstable.legacyPackages.${pkgs.stdenv.hostPlatform.system}.velocity;
+
+  server-icon = pkgs.fetchurl {
+    url = "https://i.ibb.co/0VG0xybf/server-icon.png";
+    hash = "sha256-Xx+bsIyWFz4znW7tv7RwU9eH4/ajnDLcOTPgM9bDGi0=";
+  };
 in
 {
   systemd.services.velocity = {
@@ -41,6 +46,10 @@ in
       WorkingDirectory = "${dataDir}";
       Restart = "on-abnormal";
     };
+  };
+
+  systemd.tmpfiles.settings.velocity = {
+    "${dataDir}/server-icon.png"."L+".argument = "${server-icon}";
   };
 
   sops = {
