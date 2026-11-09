@@ -8,7 +8,7 @@ qm create "$VMID" \
   --ostype l26 --machine q35 --bios ovmf \
   --efidisk0 "local-zfs:1,efitype=4m,pre-enrolled-keys=0" \
   --cpu host --cores 2 --sockets 1 \
-  --memory 4096 --balloon 0 \
+  --memory 8192 --balloon 6144 \
   --scsihw virtio-scsi-pci --scsi0 "local-zfs:128" \
   --net0 "virtio,bridge=vmbr0v50" \
   --cdrom "local:iso/nixos-minimal-26.05.8538.d57af924f160-x86_64-linux.iso" \
