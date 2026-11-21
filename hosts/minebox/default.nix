@@ -2,7 +2,7 @@
 {
   imports = [
     ../../modules/common.nix
-    ../../modules/services/portainer-edge-agent.nix
+    ../../modules/services/portainer-agent.nix
   ];
 
   networking = {
