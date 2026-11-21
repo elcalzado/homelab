@@ -145,7 +145,7 @@ scan_secrets_history() {
 
 validate_ssh_keys() {
   overall=0
-  staged_secrets=$(git -C "$root" diff --cached --name-only -- "secrets/*.yaml")
+  staged_secrets=$(git -C "$root" diff --cached --name-only --diff-filter=ACM -- "secrets/*.yaml")
   for file in $staged_secrets; do
     plain=$(mktemp)
     chmod 600 "$plain"
