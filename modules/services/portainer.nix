@@ -7,7 +7,14 @@ let
   adminPasswordFile = "/run/portainer-admin-password";
 in
 {
-  sops.secrets."webui/adminPassword" = { };
+  sops = {
+    secrets."webui/adminPassword" = { };
+    secrets."portainerAgent/secret" = { };
+
+    templates."portainer.env".content = ''
+      AGENT_SECRET=${config.sops.placeholder."portainerAgent/secret"}
+    '';
+  };
 
   virtualisation = {
     podman.enable = true;
@@ -17,12 +24,12 @@ in
       autoStart = true;
       ports = [
         "9443:9443"
-        "8000:8000"
       ];
       volumes = [
         "${dataDir}:/data"
         "${config.sops.secrets."webui/adminPassword".path}:${adminPasswordFile}:ro"
       ];
+      environmentFiles = [ config.sops.templates."portainer.env".path ];
       cmd = [
         "--trusted-origins=${domain}"
         "--admin-password-file=${adminPasswordFile}"
