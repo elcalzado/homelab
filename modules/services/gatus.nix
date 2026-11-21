@@ -1,6 +1,56 @@
-{ config, lib, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
+  reporterUser = config.homelab.backup.reporter.user;
+
+  publicKeyOf =
+    line:
+    let
+      matched = builtins.match ".* (ssh-[a-z0-9-]+ [A-Za-z0-9+/=]+ [^ ]+)" line;
+    in
+    if matched == null then
+      throw "truenas/authorized_keys holds a line with no public key: ${line}"
+    else
+      lib.head matched;
+
+  backupPublicKeys = map publicKeyOf (
+    lib.filter (line: line != "") (
+      lib.splitString "\n" (builtins.readFile ../../truenas/authorized_keys)
+    )
+  );
+
+  reportReceiver = pkgs.writeShellApplication {
+    name = "backup-report-receive";
+    runtimeInputs = [
+      pkgs.curl
+      pkgs.jq
+    ];
+    text = ''
+      read -r success job message <<< "$SSH_ORIGINAL_COMMAND"
+
+      if [[ ! "$success" =~ ^(true|false)$ || ! "$job" =~ ^[a-z0-9-]+$ ]]; then
+        echo "expected: <true|false> <job> [message]" >&2
+        exit 2
+      fi
+
+      url="http://127.0.0.1:${toString config.services.gatus.settings.web.port}/api/v1/endpoints/backups_$job/external?success=$success"
+      if [[ -n "$message" ]]; then
+        url+="&error=$(jq -rn --arg v "$message" '$v|@uri')"
+      fi
+
+      curl -fsS -X POST \
+        -H "Authorization: Bearer $(cat ${
+          lib.escapeShellArg config.sops.secrets."backup/gatusToken".path
+        })" \
+        "$url"
+    '';
+  };
+
   interval = "1m";
   slowMillis = 3000;
   matrixServerUrl = "https://matrix-client.matrix.org";
@@ -80,7 +130,9 @@ in
     secrets = {
       "matrix/accessToken" = { };
       "matrix/roomId" = { };
-      "backup/gatusToken" = { };
+      "backup/gatusToken" = {
+        owner = reporterUser;
+      };
     };
 
     templates."gatus.env".content = ''
@@ -88,6 +140,19 @@ in
       MATRIX_ROOM_ID="'${config.sops.placeholder."matrix/roomId"}'"
       BACKUP_GATUS_TOKEN=${config.sops.placeholder."backup/gatusToken"}
     '';
+  };
+
+  users = {
+    groups.${reporterUser} = { };
+
+    users.${reporterUser} = {
+      isSystemUser = true;
+      group = reporterUser;
+      useDefaultShell = true;
+      openssh.authorizedKeys.keys = map (
+        key: ''restrict,command="${lib.getExe reportReceiver}" ${key}''
+      ) backupPublicKeys;
+    };
   };
 
   services.gatus = {
