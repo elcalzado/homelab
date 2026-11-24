@@ -9,6 +9,12 @@ in
     port = 3000;
     inherit serialPort;
     secretsConfigFile = config.sops.templates."zwave-js-secrets.json".path;
+    settings.logConfig = {
+      enabled = true;
+      level = "info";
+      forceConsole = true;
+      logToFile = false;
+    };
   };
 
   networking.firewall.allowedTCPPorts = [ config.services.zwave-js.port ];
