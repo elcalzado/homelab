@@ -2,6 +2,8 @@
 {
   imports = [
     ../../modules/common.nix
+    ../../modules/services/zwave-js.nix
+    ../../modules/services/zigbee2mqtt.nix
   ];
 
   networking = {

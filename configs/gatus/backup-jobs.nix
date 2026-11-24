@@ -1,4 +1,5 @@
 [
+  "zigbee2mqtt"
   "coolify"
   "gatus"
   "home-assistant"
