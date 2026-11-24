@@ -81,3 +81,9 @@ creation_rules:
     age: >-
       age1jx5y5l3waz6x7yptktww69ysgrmryr42wkh8scaq9cg0e9ann4qsgn3php,
       age1sv5zehntfzq7llmvp3ax80604zw0xq6ldkhyqeg0ut5729ktvddsg87wah
+
+  - path_regex: secrets/assistant\.yaml$
+    age: >-
+      age127dhr2drxay0m4yxvl9zflq6gpqarwmn4qxad2hvmfv7x77sfvvqqjrrcg,
+      age1sv5zehntfzq7llmvp3ax80604zw0xq6ldkhyqeg0ut5729ktvddsg87wah
+
