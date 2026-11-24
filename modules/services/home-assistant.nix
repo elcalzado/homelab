@@ -15,6 +15,8 @@ in
       "radio_browser"
       "shopping_list"
       "isal"
+      "zwave_js"
+      "mqtt"
     ];
     config = {
       default_config = { };
