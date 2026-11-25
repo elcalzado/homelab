@@ -1,9 +1,22 @@
-{ config, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
   stateDir = "/var/lib/xmltv";
   guideFile = "${stateDir}/guide.xml";
   cacheFile = "${stateDir}/sdjson.cache";
   guideDays = 14;
+
+  programIdLine = "push(@result, [ $program->{'programID'}, 'dd_progid' ]);";
+  airDateEpisodeForGenericShows = ''
+    if(!(length($season) || length($episode) || length($part)) && $program->{'programID'} =~ /^SH/) {
+    		my @airdate = localtime(parse_airtime($program->{'airDateTime'}));
+    		push(@result, [ sprintf('.%d.', sprintf('%04d%02d%02d', $airdate[5] + 1900, $airdate[4] + 1, $airdate[3]) - 1), 'xmltv_ns' ]);
+    	}
+    	${programIdLine}'';
 
   xmltv = pkgs.perlPackages.buildPerlPackage {
     pname = "xmltv";
@@ -16,6 +29,8 @@ let
     };
     postPatch = ''
       substituteInPlace t/test_tv_imdb.t --replace-fail "/bin/cp" "${pkgs.coreutils}/bin/cp"
+      substituteInPlace grab/zz_sdjson/tv_grab_zz_sdjson \
+        --replace-fail ${lib.escapeShellArg programIdLine} ${lib.escapeShellArg airDateEpisodeForGenericShows}
     '';
     makeMakerFlags = [ "--components=tv_grab_zz_sdjson" ];
     doInstallCheck = true;
