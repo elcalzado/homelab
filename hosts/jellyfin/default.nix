@@ -30,7 +30,6 @@
     options = [
       "nfsvers=4"
       "_netdev"
-      "ro"
       "nofail"
     ];
   };
