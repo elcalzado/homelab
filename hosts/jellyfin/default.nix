@@ -3,6 +3,7 @@
   imports = [
     ../../modules/common.nix
     ../../modules/services/jellyfin.nix
+    ../../modules/services/xmltv.nix
   ];
 
   networking = {
@@ -29,7 +30,6 @@
     options = [
       "nfsvers=4"
       "_netdev"
-      "ro"
       "nofail"
     ];
   };
