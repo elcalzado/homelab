@@ -190,6 +190,7 @@
                   {
                     services.openssh.settings.PermitRootLogin = lib.mkForce "yes";
                     services.openssh.settings.PasswordAuthentication = lib.mkForce true;
+                    boot.supportedFilesystems.zfs = false;
                   }
                 ]
                 ++ spec.modules;

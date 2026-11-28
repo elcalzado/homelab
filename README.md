@@ -46,3 +46,4 @@ from one definition.
 | minebox        | `10.0.50.3`   | VM       |
 | worker         | `10.0.50.2`   | RPI      |
 | coolify        | `10.0.50.4`   | VM       |
+| assistant      | `10.0.30.2`   | RPI      |

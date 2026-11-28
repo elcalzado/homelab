@@ -66,6 +66,10 @@ jobs:
           swap-storage: false
       - uses: actions/checkout@v5
       - uses: DeterminateSystems/nix-installer-action@v22
+        with:
+          extra-conf: |
+            extra-substituters = https://nixos-raspberrypi.cachix.org
+            extra-trusted-public-keys = nixos-raspberrypi.cachix.org-1:4iMO9LXa8BqhU+Rpg6LQKiGa2lsNh/j2oiYLNOQ5sPI=
       - run: ./scripts/checks.sh build '${{ matrix.host }}'
       - if: failure()
         run: df -h /

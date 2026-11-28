@@ -1,6 +1,7 @@
-{ config, ... }:
+{ config, pkgs, ... }:
 let
   stateDir = "/var/lib/hass";
+  automationsFile = "${stateDir}/automations.yaml";
   autoBackupDir = "${stateDir}/backups";
   autoBackupStaleAfterHours = 48;
 in
@@ -15,9 +16,13 @@ in
       "radio_browser"
       "shopping_list"
       "isal"
+      "zwave_js"
+      "mqtt"
     ];
+    customComponents = [ pkgs.home-assistant-custom-components.alarmo ];
     config = {
       default_config = { };
+      "automation ui" = "!include automations.yaml";
       homeassistant = {
         latitude = "!secret latitude";
         longitude = "!secret longitude";
@@ -33,6 +38,8 @@ in
     extraPackages = ps: with ps; [ psycopg2 ];
     config.recorder.db_url = "postgresql://@/hass";
   };
+
+  systemd.tmpfiles.rules = [ "f ${automationsFile} 0644 hass hass -" ];
 
   services.postgresql = {
     enable = true;

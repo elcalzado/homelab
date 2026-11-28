@@ -240,6 +240,18 @@ in
           group = "management";
           url = "http://hass.home.arpa:8123";
         })
+        (listening {
+          name = "zwave-js";
+          group = "management";
+          host = "assistant.home.arpa";
+          port = 3000;
+        })
+        (listening {
+          name = "mosquitto";
+          group = "management";
+          host = "assistant.home.arpa";
+          port = 1883;
+        })
 
         (web {
           name = "pve1";
